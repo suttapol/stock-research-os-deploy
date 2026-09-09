@@ -1,0 +1,48 @@
+{
+  "ticker": "NVDA",
+  "built": "2026-09-09",
+  "figures": [
+    {
+      "id": "revenue_mix",
+      "after_heading": "business model",
+      "title_th": "โมเดลธุรกิจ · สัดส่วนรายได้และการเติบโต",
+      "caption_th": "สัดส่วน segment + จังหวะการเร่งตัวของรายได้ที่ตารางบอกช้ากว่า",
+      "png": "diagrams/revenue_mix.png"
+    },
+    {
+      "id": "supply_chain",
+      "after_heading": "supply chain",
+      "title_th": "ห่วงโซ่อุปทาน",
+      "caption_th": "ลูกค้า 3 ราย = 21%+17%+16% = ~54% ของรายได้ Q1 FY2027",
+      "png": "diagrams/supply_chain.png"
+    },
+    {
+      "id": "margin_trend",
+      "after_heading": "income statement",
+      "title_th": "การเงิน · แนวโน้มอัตรากำไร 8 ไตรมาส",
+      "caption_th": "เส้น 3 เส้น = gross / operating / net margin รายไตรมาส — เห็น regime change และ shock จุดเดียว",
+      "png": "diagrams/margin_trend.png"
+    },
+    {
+      "id": "capital_returns",
+      "after_heading": "cash flow",
+      "title_th": "การเงิน · กระแสเงินสดและการคืนทุน",
+      "caption_th": "OCF / FCF / buyback ต่อปี + net cash ใต้แกน — เห็น capital efficiency และการคืนทุน",
+      "png": "diagrams/capital_returns.png"
+    },
+    {
+      "id": "guidance_track",
+      "after_heading": "guidance",
+      "title_th": "ผู้บริหาร · Guidance เทียบผลจริง",
+      "caption_th": "จุดเขียว = ทำได้เกิน guidance, จุดแดง = ต่ำกว่า — track record ผู้บริหารในภาพเดียว",
+      "png": "diagrams/guidance_track.png"
+    },
+    {
+      "id": "eps_scenario",
+      "after_heading": "scenario",
+      "title_th": "การประเมินมูลค่า · Scenario Fan เป้าราคา",
+      "caption_th": "เป้าราคาแต่ละ scenario วางบนเส้นราคาเดียวกับราคาปัจจุบัน — เห็น asymmetry ของ downside/upside",
+      "png": "diagrams/eps_scenario.png"
+    }
+  ]
+}
