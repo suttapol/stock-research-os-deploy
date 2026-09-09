@@ -75,7 +75,7 @@
       จำนำทะเบียน (title loan) + เช่าซื้อ — วงจร NPL, risk/return, moat 7 มิติ และใครได้เปรียบเมื่อเกิดสงครามราคา.
       ตัวเลข ROE/D-E/loan book จาก SET Listed Company Snapshot; วิเคราะห์เชิงคุณภาพจาก research draft ใน pipeline.
     </p>
-    <span class="badge">DRAFT v0.1 · NPL / coverage / credit cost ยังไม่เติม (ต้องดึงจาก 56-1)</span>
+    <span class="badge">DRAFT v0.2 · credit metrics จาก broker note — cross-check 56-1 ปี 2568 ก่อนใช้</span>
   </div>
 </header>
 
@@ -128,6 +128,52 @@
           <text x="470" y="104" font-family="Geist, sans-serif" font-size="10.5" fill="var(--warn)">ด้วย leverage สูง</text>
         </svg>
         <figcaption>ขนาดวงกลม = ขนาดพอร์ตสินเชื่อ · ลูกศร = ทิศทาง loan book (SAWAD หด, MTC โต) · FY2024, D/E บางตัวลดลงอีกใน 2025–2026</figcaption>
+      </figure>
+    </section>
+
+    <hr />
+
+    <section>
+      <span class="sec-tag">1b · Credit Quality</span>
+      <h2>Credit cost — secured แยกจาก unsecured ชัดเจน</h2>
+      <p class="lede">
+        จำนำทะเบียน/เช่าซื้อ (SAWAD ~2% · MTC ~3.1% · TIDLOR 2.8%) credit cost ต่ำกว่าบัตร/สินเชื่อบุคคล
+        (KTC 5.3% · AEONTS ~7.8%) มาก. TIDLOR asset quality ดีสุด — NPL 1.5%, coverage 284%.
+      </p>
+      <figure>
+        <svg viewBox="0 0 640 300" role="img" aria-label="credit cost ปี 2568: SAWAD 1.8%, TIDLOR 2.8%, MTC 3.1%, KTC 5.3%, AEONTS 7.8% โดย secured เป็นสีเขียว unsecured เป็นสีส้ม">
+          <text x="0" y="14" font-family="Geist Mono, monospace" font-size="10" letter-spacing="0.5" fill="var(--muted)">CREDIT COST ปี 2568 (% ของ avg loan)</text>
+          <!-- bars: x label at left (x=88, anchor end), bar from x=96, scale: 8% -> 520px -->
+          <g font-family="Geist, sans-serif" font-size="12" fill="currentColor" text-anchor="end">
+            <text x="88" y="52">SAWAD</text>
+            <text x="88" y="92">TIDLOR</text>
+            <text x="88" y="132">MTC</text>
+            <text x="88" y="172">KTC</text>
+            <text x="88" y="212">AEONTS</text>
+          </g>
+          <g>
+            <rect x="96" y="40" width="117" height="18" rx="2" fill="var(--good)"/>
+            <rect x="96" y="80" width="182" height="18" rx="2" fill="var(--good)"/>
+            <rect x="96" y="120" width="202" height="18" rx="2" fill="var(--good)"/>
+            <rect x="96" y="160" width="345" height="18" rx="2" fill="var(--warn)"/>
+            <rect x="96" y="200" width="507" height="18" rx="2" fill="var(--warn)"/>
+          </g>
+          <g font-family="Geist Mono, monospace" font-size="10.5" fill="var(--muted)">
+            <text x="219" y="53">1.8%F</text>
+            <text x="284" y="93">2.8%</text>
+            <text x="304" y="133">~3.1%</text>
+            <text x="447" y="173">5.3%</text>
+            <text x="609" y="213">~7.8%</text>
+          </g>
+          <line x1="96" y1="232" x2="616" y2="232" stroke="var(--hair)"/>
+          <g font-family="Geist Mono, monospace" font-size="9" fill="var(--muted)" text-anchor="middle">
+            <text x="96" y="246">0%</text><text x="226" y="246">2%</text><text x="356" y="246">4%</text><text x="486" y="246">6%</text><text x="616" y="246">8%</text>
+          </g>
+          <rect x="96" y="266" width="12" height="10" fill="var(--good)"/><text x="114" y="275" font-family="Geist Mono, monospace" font-size="9.5" fill="var(--muted)">secured (จำนำ/HP)</text>
+          <rect x="256" y="266" width="12" height="10" fill="var(--warn)"/><text x="274" y="275" font-family="Geist Mono, monospace" font-size="9.5" fill="var(--muted)">unsecured (บัตร/P-loan)</text>
+          <text x="0" y="292" font-family="Geist, sans-serif" font-size="10.5" fill="var(--muted)">NPL: TIDLOR 1.5% · KTC 1.8% · MTC ~3.0% · SAWAD verify · AEONTS ~5.5%  |  coverage: KTC 425% · TIDLOR 284% · MTC 143%</text>
+        </svg>
+        <figcaption>ที่มา: broker note + ข่าวผลประกอบการ 2568 (kaohoon, InnovestX, TISCO) — ต้อง cross-check 56-1</figcaption>
       </figure>
     </section>
 
@@ -242,8 +288,11 @@
             <tr><td>Net margin FY2024</td><td class="num">24.9%</td><td class="num">21.0%</td><td class="num">20.0% (FY23)</td></tr>
             <tr><td>Loan book</td><td class="num">฿93B ↓8.6%</td><td class="num">฿164B ↑</td><td class="num">฿107B +8%</td></tr>
             <tr><td>รายได้ CAGR FY22→24</td><td class="num">~13%</td><td class="num">~18%</td><td class="num">~24%/y</td></tr>
+            <tr><td>NPL ratio</td><td class="num">verify (~3–4%)</td><td class="num">~3.0%</td><td class="num">1.5%</td></tr>
+            <tr><td>Coverage ratio</td><td class="num">verify</td><td class="num">~143%</td><td class="num">~284%</td></tr>
+            <tr><td>Credit cost 2568</td><td class="num">~1.8–2.0%</td><td class="num">~3.1%</td><td class="num">2.8%</td></tr>
             <tr><td>Lynch class</td><td>Cyclical</td><td>Stalwart</td><td>Stalwart</td></tr>
-            <tr><td>NPL / coverage / credit cost</td><td colspan="3" class="num" style="color:var(--warn)">ยังไม่เติม — ต้องดึงจาก 56-1 ปี 2568</td></tr>
+            <tr><td colspan="4" class="num" style="color:var(--muted);font-size:.78rem">credit metrics จาก broker note 2568 — cross-check 56-1 · เทียบบัตร: KTC credit cost 5.3% NPL 1.8% · AEONTS 7.8% NPL ~5.5%</td></tr>
           </tbody>
         </table>
       </div>
@@ -255,15 +304,15 @@
       <span class="sec-tag">5 · บทสรุป</span>
       <h2>5 คำถามที่ primer ต้องตอบ</h2>
       <ol>
-        <li><strong>วงจร NPL อยู่ช่วงไหน:</strong> provision พีคผ่านไปแล้ว (2566) — ตอนนี้ normalization ทำให้กำไรโตเร็วกว่ารายได้. <strong>แต่ยังไม่ยืนยันว่า NPL formation ผ่านพีค</strong> → ต้องดู stage-2 migration ราย บ.</li>
-        <li><strong>Business model แข็งสุด:</strong> ยังสรุปไม่ได้จนมี NPL/credit cost/NIM. เบื้องต้น MTC (scale + ROE + branch) แต่ leverage สูงสุด = เปราะสุด downside; TIDLOR ได้เปรียบ funding (BAY) + รายได้ประกัน แต่ต้องเคลียร์รายการ below-the-line ก่อน</li>
-        <li><strong>สงครามราคา ใครชนะ:</strong> ตัวที่ cost of funds ต่ำสุด + asset quality ดีสุด → เบื้องต้น TIDLOR (BAY). ตัวเปราะ = ระดมทุนแพง + พอร์ต mix เสี่ยง (มอเตอร์ไซค์/unsecured)</li>
+        <li><strong>วงจร NPL อยู่ช่วงไหน:</strong> ปี 2568 credit cost ลงทุกตัว — <strong>secured (จำนำ/HP) ผ่านพีคชัด</strong> (SAWAD 2.3→1.8%F, TIDLOR 2.8%, MTC ~3.1%); <strong>unsecured ยังตามหลัง</strong> (AEONTS ~7.8%). NPL ระบบยังสูง → broker คาด SAWAD loan −3.5% YoY Q1'69</li>
+        <li><strong>Business model แข็งสุด (asset quality):</strong> <strong>TIDLOR ชนะขาด</strong> — NPL 1.5%, coverage 284%, credit cost 2.8% จาก mix รถบรรทุก/เชิงพาณิชย์ + insurance + BAY. MTC ROE สูงสุด แต่ leverage 3.6× + NPL ~3% + coverage แค่ 143% = buffer บางสุด</li>
+        <li><strong>สงครามราคา ใครชนะ:</strong> <strong>TIDLOR</strong> — cost of funds ต่ำสุด (BAY) + asset quality ดีสุด → ลด yield แข่งได้โดยไม่เสีย margin. ตัวเปราะ = AEONTS (unsecured), MTC (มอเตอร์ไซค์ + leverage)</li>
         <li><strong>ผู้เล่นใหม่:</strong> แบงก์/บ.ลูก แย่ง volume ลูกค้าชั้นดี + กด pricing; virtual bank ยังเล็ก แต่เป็น structural threat 3–5 ปี</li>
-        <li><strong>Valuation:</strong> SAWAD P/B &lt;1× + P/E ~6–7× (mispriced ถ้า inflection ยั่งยืน / value trap ถ้า loan book หดต่อ); MTC PEG &lt;0.6; TIDLOR discount สะท้อน NPL uncertainty</li>
+        <li><strong>Valuation:</strong> SAWAD P/B &lt;1× P/E ~6–7× (mispriced ถ้า inflection ยั่งยืน / value trap ถ้า loan หดต่อ + หุ้นปันผล dilute); MTC PEG &lt;0.6; <strong>TIDLOR discount สะท้อน growth ที่ช้า ไม่ใช่ risk</strong> (asset quality ดีสุด) → อาจ mispriced ที่สุดในกลุ่ม; KTC ROE 18% แต่ growth 1–2% = bond proxy</li>
       </ol>
       <div class="callout warn">
-        <span class="k">ข้อจำกัดของ draft นี้</span>
-        ตัวเลข credit quality (NPL ratio, coverage, credit cost bps, NIM/spread), dividend payout 10 ปี, และ KTC/AEONTS/แบงก์ HP ยังไม่เติม — ต้องดึงจาก 56-1 One Report ปี 2568 / SETSMART. ตัวเลข ROE/D-E/loan book ใช้ SET Snapshot (FY2024 เป็นหลัก บางตัวมี H1 2025).
+        <span class="k">ข้อจำกัดของ draft นี้ (v0.2)</span>
+        credit metrics มาจาก broker note + ข่าวผลประกอบการ 2568 (kaohoon, InnovestX, TISCO) — <strong>ต้อง cross-check กับ 56-1 One Report ปี 2568 ก่อนใช้ในรายงานจริง</strong>. NPL ratio ของ SAWAD ยังไม่ได้ยืนยันเป๊ะ. ยังไม่มี: yield/CoF/NIM ทุกตัว, DPS 10 ปี, THANI/ASK/HENG/SAK, แบงก์ HP.
       </div>
     </section>
 
