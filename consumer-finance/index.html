@@ -1,0 +1,279 @@
+<title>Thai Consumer Finance Primer</title>
+<meta name="description" content="เปรียบเทียบ SAWAD · MTC · TIDLOR — risk/return, loan book, moat, โครงสร้างอุตสาหกรรม (draft v0.1)" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+<style>
+  :root{
+    --paper:#FBFCFA; --raised:#F1F4EC; --ink:#1B1E1A; --muted:#5F665C; --hair:#E3E7DF;
+    --accent:#2E6F8E; --accent2:#7FB0C4; --on-accent:#FBFCFA;
+    --warn:#B4632B; --down:#B23A3A; --good:#3F7D3F;
+    --measure:50rem;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#111413; --raised:#1B1E17; --ink:#E7EAE4; --muted:#9AA294; --hair:#2A2F28;
+      --accent:#6FB2CE; --accent2:#3C6C80; --on-accent:#111413;
+      --warn:#D9925A; --down:#E27171; --good:#79B979;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#111413; --raised:#1B1E17; --ink:#E7EAE4; --muted:#9AA294; --hair:#2A2F28;
+    --accent:#6FB2CE; --accent2:#3C6C80; --on-accent:#111413;
+    --warn:#D9925A; --down:#E27171; --good:#79B979;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:Geist,"Segoe UI",system-ui,sans-serif;line-height:1.62;font-size:16px}
+  .wrap{max-width:var(--measure);margin:0 auto;padding:0 1.5rem}
+  header.top{border-bottom:1px solid var(--hair)}
+  header.top .wrap{padding:2.6rem 1.5rem 2rem}
+  .eyebrow{font-family:Geist Mono,ui-monospace,monospace;font-size:.7rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 .9rem}
+  h1{font-family:Instrument Serif,Georgia,serif;font-weight:400;font-size:2.7rem;line-height:1.1;
+    margin:0 0 .6rem;text-wrap:balance}
+  .standfirst{font-size:1.04rem;color:var(--muted);max-width:40rem;margin:0}
+  .badge{display:inline-block;margin-top:1.2rem;font-family:Geist Mono,ui-monospace,monospace;
+    font-size:.72rem;color:var(--warn);border:1px solid var(--warn);border-radius:5px;padding:4px 9px}
+  main .wrap{padding:2.6rem 1.5rem 4rem}
+  section{margin:0 0 3.2rem}
+  h2{font-family:Instrument Serif,Georgia,serif;font-weight:400;font-size:1.8rem;line-height:1.15;
+    margin:0 0 .3rem;text-wrap:balance}
+  .sec-tag{font-family:Geist Mono,ui-monospace,monospace;font-size:.68rem;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--accent);display:block;margin-bottom:.5rem}
+  p{margin:0 0 1rem}
+  p.lede{font-size:1rem}
+  strong{font-weight:600}
+  figure{margin:1.4rem 0 0}
+  figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:.82rem;color:var(--muted);margin-top:.7rem;line-height:1.5}
+  .tbl-scroll{overflow-x:auto;margin:1.2rem 0}
+  table{border-collapse:collapse;width:100%;font-size:.85rem;min-width:34rem}
+  th,td{text-align:left;padding:.5rem .7rem;border-bottom:1px solid var(--hair)}
+  th{font-family:Geist Mono,ui-monospace,monospace;font-size:.66rem;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--muted);font-weight:500}
+  td.num{font-family:Geist Mono,ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  tr td:first-child{font-weight:500}
+  .callout{border-left:2px solid var(--accent);padding:.2rem 0 .2rem 1.1rem;margin:1.4rem 0}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout .k{font-family:Geist Mono,ui-monospace,monospace;font-size:.68rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--accent);display:block;margin-bottom:.3rem}
+  .callout.warn .k{color:var(--warn)}
+  hr{border:0;border-top:1px solid var(--hair);margin:2.8rem 0}
+  ol{padding-left:1.3rem} ol li{margin:.5rem 0}
+  footer{border-top:1px solid var(--hair);color:var(--muted);font-size:.8rem}
+  footer .wrap{padding:1.6rem 1.5rem 2.4rem}
+  code{font-family:Geist Mono,ui-monospace,monospace;font-size:.82rem;background:var(--raised);padding:.05rem .3rem;border-radius:3px}
+  @media (max-width:520px){h1{font-size:2.1rem}h2{font-size:1.45rem}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">Stock Research OS · Industry Primer</p>
+    <h1>ไฟแนนซ์รากหญ้าไทย — เทียบ SAWAD · MTC · TIDLOR</h1>
+    <p class="standfirst">
+      จำนำทะเบียน (title loan) + เช่าซื้อ — วงจร NPL, risk/return, moat 7 มิติ และใครได้เปรียบเมื่อเกิดสงครามราคา.
+      ตัวเลข ROE/D-E/loan book จาก SET Listed Company Snapshot; วิเคราะห์เชิงคุณภาพจาก research draft ใน pipeline.
+    </p>
+    <span class="badge">DRAFT v0.1 · NPL / coverage / credit cost ยังไม่เติม (ต้องดึงจาก 56-1)</span>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section>
+      <span class="sec-tag">1 · Risk / Return</span>
+      <h2>ROE เทียบ Leverage — ยิ่งขวายิ่งเปราะเมื่อ credit cycle กลับ</h2>
+      <p class="lede">
+        MTC ทำ ROE สูงสุด แต่ก็อยู่ขวาสุด (D/E 3.6×) — buffer บางสุดถ้า NPL กลับมา.
+        SAWAD ถอย leverage ลงเชิงรุก (2.6× → 2.0×) พร้อมกับรายได้ที่เพิ่งพลิกบวก.
+        TIDLOR อยู่ตรงกลาง — ROE ต่ำสุดในสามตัว แต่มี BAY หนุนต้นทุนเงินทุน.
+      </p>
+      <figure>
+        <svg viewBox="0 0 640 380" role="img" aria-label="แผนภาพ ROE เทียบ D/E: MTC ROE 17% D/E 3.6 เท่า, SAWAD ROE 16.5% D/E 2.0 เท่า, TIDLOR ROE 14% D/E 2.5 เท่า ขนาดวงกลมคือขนาดพอร์ตสินเชื่อ">
+          <!-- axes: x D/E 0..4 -> px 60..600 ; y ROE 10..20 -> px 320..40 -->
+          <line x1="60" y1="320" x2="600" y2="320" stroke="var(--hair)"/>
+          <line x1="60" y1="40" x2="60" y2="320" stroke="var(--hair)"/>
+          <g font-family="Geist Mono, monospace" font-size="9.5" fill="var(--muted)">
+            <text x="60" y="340" text-anchor="middle">1.0×</text>
+            <text x="195" y="340" text-anchor="middle">2.0×</text>
+            <text x="330" y="340" text-anchor="middle">3.0×</text>
+            <text x="465" y="340" text-anchor="middle">4.0×</text>
+            <text x="600" y="340" text-anchor="middle">5.0×</text>
+            <text x="52" y="323" text-anchor="end">10%</text>
+            <text x="52" y="238" text-anchor="end">13%</text>
+            <text x="52" y="154" text-anchor="end">16%</text>
+            <text x="52" y="70" text-anchor="end">19%</text>
+          </g>
+          <text x="330" y="366" text-anchor="middle" font-family="Geist, sans-serif" font-size="11" fill="var(--muted)">D/E (leverage) →</text>
+          <text x="20" y="180" font-family="Geist, sans-serif" font-size="11" fill="var(--muted)" transform="rotate(-90 20 180)">ROE FY2024 →</text>
+
+          <!-- SAWAD: D/E ~1.97 -> x = 60 + (1.97-1)*135 = 191 ; ROE 16.5 -> y = 320 - (16.5-10)*28 = 138 -->
+          <circle cx="191" cy="138" r="26" fill="var(--accent)" fill-opacity="0.16" stroke="var(--accent)"/>
+          <text x="191" y="135" text-anchor="middle" font-family="Geist, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">SAWAD</text>
+          <text x="191" y="150" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9" fill="var(--muted)">฿93B ↓</text>
+
+          <!-- MTC: D/E 3.62 -> x = 60 + 2.62*135 = 414 ; ROE 17.0 -> y = 320 - 7*28 = 124 -->
+          <circle cx="414" cy="124" r="34" fill="var(--warn)" fill-opacity="0.16" stroke="var(--warn)"/>
+          <text x="414" y="121" text-anchor="middle" font-family="Geist, sans-serif" font-size="12.5" font-weight="600" fill="var(--ink)">MTC</text>
+          <text x="414" y="137" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9" fill="var(--muted)">฿164B ↑</text>
+
+          <!-- TIDLOR: D/E 2.52 -> x = 60 + 1.52*135 = 265 ; ROE 14.1 -> y = 320 - 4.1*28 = 205 -->
+          <circle cx="265" cy="205" r="24" fill="var(--accent2)" fill-opacity="0.2" stroke="var(--accent2)"/>
+          <text x="265" y="202" text-anchor="middle" font-family="Geist, sans-serif" font-size="12" font-weight="600" fill="var(--ink)">TIDLOR</text>
+          <text x="265" y="217" text-anchor="middle" font-family="Geist Mono, monospace" font-size="9" fill="var(--muted)">฿107B</text>
+
+          <text x="470" y="90" font-family="Geist, sans-serif" font-size="10.5" fill="var(--warn)">โซนเปราะ: ROE สูง</text>
+          <text x="470" y="104" font-family="Geist, sans-serif" font-size="10.5" fill="var(--warn)">ด้วย leverage สูง</text>
+        </svg>
+        <figcaption>ขนาดวงกลม = ขนาดพอร์ตสินเชื่อ · ลูกศร = ทิศทาง loan book (SAWAD หด, MTC โต) · FY2024, D/E บางตัวลดลงอีกใน 2025–2026</figcaption>
+      </figure>
+    </section>
+
+    <hr />
+
+    <section>
+      <span class="sec-tag">2 · Loan Book</span>
+      <h2>เส้นทางพอร์ตสินเชื่อ — SAWAD เพิ่งพลิก, MTC ไม่หยุด, TIDLOR ช้า</h2>
+      <figure>
+        <svg viewBox="0 0 640 300" role="img" aria-label="พอร์ตสินเชื่อ: MTC โตจาก 128 พันล้านเป็น 164 พันล้าน, TIDLOR โตช้าจาก 85 เป็น 107, SAWAD หดจาก 111 เหลือ 93 แล้วเริ่มพลิกบวกไตรมาส 1-2 ปี 2026">
+          <!-- y ฿B 60..180 -> px 250..30 ; x 5 points -->
+          <g font-family="Geist Mono, monospace" font-size="9" fill="var(--muted)">
+            <text x="44" y="253" text-anchor="end">60</text>
+            <text x="44" y="198" text-anchor="end">90</text>
+            <text x="44" y="143" text-anchor="end">120</text>
+            <text x="44" y="88" text-anchor="end">150</text>
+            <text x="44" y="33" text-anchor="end">180</text>
+          </g>
+          <g stroke="var(--hair)">
+            <line x1="52" y1="250" x2="620" y2="250"/>
+            <line x1="52" y1="195" x2="620" y2="195"/>
+            <line x1="52" y1="140" x2="620" y2="140"/>
+            <line x1="52" y1="85" x2="620" y2="85"/>
+          </g>
+          <g font-family="Geist Mono, monospace" font-size="9" fill="var(--muted)" text-anchor="middle">
+            <text x="80" y="270">FY22</text>
+            <text x="215" y="270">FY23</text>
+            <text x="350" y="270">FY24</text>
+            <text x="485" y="270">H1'25</text>
+            <text x="600" y="270">Q2'26</text>
+          </g>
+          <!-- MTC: 128,150,164,~168,~172 -> y = 250 - (v-60)/120*220 -->
+          <polyline points="80,125 215,85 350,59 485,52 600,45" fill="none" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="600" cy="45" r="3.5" fill="var(--warn)"/>
+          <text x="600" y="38" text-anchor="end" font-family="Geist, sans-serif" font-size="11" font-weight="600" fill="var(--warn)">MTC ฿172B</text>
+          <!-- TIDLOR: 85,97,~100,~104,107 -->
+          <polyline points="80,204 215,182 350,177 485,170 600,164" fill="none" stroke="var(--accent2)" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="600" cy="164" r="3.5" fill="var(--accent2)"/>
+          <text x="600" y="158" text-anchor="end" font-family="Geist, sans-serif" font-size="11" font-weight="600" fill="var(--accent)">TIDLOR ฿107B</text>
+          <!-- SAWAD: 111,111,108,93,~94 (dip then flat/up) -->
+          <polyline points="80,157 215,157 350,162 485,196 600,194" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="0"/>
+          <circle cx="600" cy="194" r="3.5" fill="var(--accent)"/>
+          <text x="600" y="212" text-anchor="end" font-family="Geist, sans-serif" font-size="11" font-weight="600" fill="var(--accent)">SAWAD ฿94B</text>
+          <text x="415" y="212" font-family="Geist Mono, monospace" font-size="9" fill="var(--muted)">−8.6% YoY แล้วพลิก +</text>
+        </svg>
+        <figcaption>฿ พันล้าน (approx จาก SET snapshot + research draft) · SAWAD หด 6 ไตรมาสก่อนกลับมาโต Q1–Q2 2026 = inflection ที่ต้องจับตา</figcaption>
+      </figure>
+    </section>
+
+    <hr />
+
+    <section>
+      <span class="sec-tag">3 · Moat</span>
+      <h2>Moat 7 มิติ — ประเมินเบื้องต้น (ต้อง verify)</h2>
+      <figure>
+        <svg viewBox="0 0 640 320" role="img" aria-label="ตารางความเข้ม moat 7 มิติ 3 บริษัท: MTC แข็งเรื่องแบรนด์และสาขา, TIDLOR แข็งเรื่องต้นทุนเงินทุนจาก BAY, SAWAD มีใบอนุญาต BFIT">
+          <g font-family="Geist, sans-serif" font-size="11" fill="currentColor" text-anchor="end">
+            <text x="188" y="60">Brand / trust รากหญ้า</text>
+            <text x="188" y="96">ความหนาแน่นสาขา</text>
+            <text x="188" y="132">Data / credit scoring</text>
+            <text x="188" y="168">Cost of funds</text>
+            <text x="188" y="204">Collection</text>
+            <text x="188" y="240">ใบอนุญาตหายาก</text>
+            <text x="188" y="276">Switching cost</text>
+          </g>
+          <g font-family="Geist, sans-serif" font-size="11.5" font-weight="600" fill="currentColor" text-anchor="middle">
+            <text x="300" y="34">SAWAD</text>
+            <text x="410" y="34">MTC</text>
+            <text x="520" y="34">TIDLOR</text>
+          </g>
+          <!-- score cells: 3=strong (accent solid), 2=moderate (accent 0.4), 1=weak (hair) -->
+          <!-- rows y: 48,84,120,156,192,228,264  cells x: 256,366,476  w=100 h=28 -->
+          <g>
+            <!-- Brand -->
+            <rect x="256" y="48" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.85"/><rect x="366" y="48" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.85"/><rect x="476" y="48" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.5"/>
+            <!-- branches -->
+            <rect x="256" y="84" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.85"/><rect x="366" y="84" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.85"/><rect x="476" y="84" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.4"/>
+            <!-- data -->
+            <rect x="256" y="120" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.4"/><rect x="366" y="120" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.6"/><rect x="476" y="120" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.6"/>
+            <!-- CoF -->
+            <rect x="256" y="156" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.4"/><rect x="366" y="156" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.4"/><rect x="476" y="156" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.85"/>
+            <!-- collection -->
+            <rect x="256" y="192" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.4"/><rect x="366" y="192" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.6"/><rect x="476" y="192" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.4"/>
+            <!-- license -->
+            <rect x="256" y="228" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.85"/><rect x="366" y="228" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.4"/><rect x="476" y="228" width="100" height="28" rx="3" fill="var(--accent)" fill-opacity="0.4"/>
+            <!-- switching -->
+            <rect x="256" y="264" width="100" height="28" rx="3" fill="var(--hair)"/><rect x="366" y="264" width="100" height="28" rx="3" fill="var(--hair)"/><rect x="476" y="264" width="100" height="28" rx="3" fill="var(--hair)"/>
+          </g>
+          <g font-family="Geist Mono, monospace" font-size="8.5" fill="var(--muted)">
+            <rect x="256" y="300" width="14" height="10" fill="var(--accent)" fill-opacity="0.85"/><text x="274" y="309">strong</text>
+            <rect x="330" y="300" width="14" height="10" fill="var(--accent)" fill-opacity="0.45"/><text x="348" y="309">moderate</text>
+            <rect x="416" y="300" width="14" height="10" fill="var(--hair)"/><text x="434" y="309">weak</text>
+          </g>
+        </svg>
+        <figcaption>ประเมินจาก research draft — TIDLOR เด่นเรื่อง cost of funds (BAY/กรุงศรีถือหุ้นใหญ่); SAWAD มี BFIT (ใบอนุญาตรับฝากเงิน); MTC เด่น scale + brand. Switching cost ต่ำทุกตัว = ไม่ใช่ moat</figcaption>
+      </figure>
+    </section>
+
+    <hr />
+
+    <section>
+      <span class="sec-tag">4 · ตารางเทียบ</span>
+      <h2>ตัวเลขหลัก (SET Snapshot · รายได้ = gross)</h2>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th></th><th>SAWAD</th><th>MTC</th><th>TIDLOR</th></tr></thead>
+          <tbody>
+            <tr><td>ROE FY2024</td><td class="num">16.5%</td><td class="num">17.0%</td><td class="num">14.1% (FY23)</td></tr>
+            <tr><td>ROA FY2024</td><td class="num">8.95%</td><td class="num">7.77%</td><td class="num">7.12% (FY23)</td></tr>
+            <tr><td>D/E FY2024</td><td class="num">1.97×</td><td class="num">3.62×</td><td class="num">2.52× (FY23)</td></tr>
+            <tr><td>D/E ล่าสุด</td><td class="num">~1.3–1.7×</td><td class="num">3.14×</td><td class="num">2.16×</td></tr>
+            <tr><td>Net margin FY2024</td><td class="num">24.9%</td><td class="num">21.0%</td><td class="num">20.0% (FY23)</td></tr>
+            <tr><td>Loan book</td><td class="num">฿93B ↓8.6%</td><td class="num">฿164B ↑</td><td class="num">฿107B +8%</td></tr>
+            <tr><td>รายได้ CAGR FY22→24</td><td class="num">~13%</td><td class="num">~18%</td><td class="num">~24%/y</td></tr>
+            <tr><td>Lynch class</td><td>Cyclical</td><td>Stalwart</td><td>Stalwart</td></tr>
+            <tr><td>NPL / coverage / credit cost</td><td colspan="3" class="num" style="color:var(--warn)">ยังไม่เติม — ต้องดึงจาก 56-1 ปี 2568</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <hr />
+
+    <section>
+      <span class="sec-tag">5 · บทสรุป</span>
+      <h2>5 คำถามที่ primer ต้องตอบ</h2>
+      <ol>
+        <li><strong>วงจร NPL อยู่ช่วงไหน:</strong> provision พีคผ่านไปแล้ว (2566) — ตอนนี้ normalization ทำให้กำไรโตเร็วกว่ารายได้. <strong>แต่ยังไม่ยืนยันว่า NPL formation ผ่านพีค</strong> → ต้องดู stage-2 migration ราย บ.</li>
+        <li><strong>Business model แข็งสุด:</strong> ยังสรุปไม่ได้จนมี NPL/credit cost/NIM. เบื้องต้น MTC (scale + ROE + branch) แต่ leverage สูงสุด = เปราะสุด downside; TIDLOR ได้เปรียบ funding (BAY) + รายได้ประกัน แต่ต้องเคลียร์รายการ below-the-line ก่อน</li>
+        <li><strong>สงครามราคา ใครชนะ:</strong> ตัวที่ cost of funds ต่ำสุด + asset quality ดีสุด → เบื้องต้น TIDLOR (BAY). ตัวเปราะ = ระดมทุนแพง + พอร์ต mix เสี่ยง (มอเตอร์ไซค์/unsecured)</li>
+        <li><strong>ผู้เล่นใหม่:</strong> แบงก์/บ.ลูก แย่ง volume ลูกค้าชั้นดี + กด pricing; virtual bank ยังเล็ก แต่เป็น structural threat 3–5 ปี</li>
+        <li><strong>Valuation:</strong> SAWAD P/B &lt;1× + P/E ~6–7× (mispriced ถ้า inflection ยั่งยืน / value trap ถ้า loan book หดต่อ); MTC PEG &lt;0.6; TIDLOR discount สะท้อน NPL uncertainty</li>
+      </ol>
+      <div class="callout warn">
+        <span class="k">ข้อจำกัดของ draft นี้</span>
+        ตัวเลข credit quality (NPL ratio, coverage, credit cost bps, NIM/spread), dividend payout 10 ปี, และ KTC/AEONTS/แบงก์ HP ยังไม่เติม — ต้องดึงจาก 56-1 One Report ปี 2568 / SETSMART. ตัวเลข ROE/D-E/loan book ใช้ SET Snapshot (FY2024 เป็นหลัก บางตัวมี H1 2025).
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    Stock Research OS · framework: <code>prompts/questions/industry_th_consumer_finance.md</code> ·
+    draft: <code>knowledge_base/sectors/th_consumer_finance_primer.md</code> ·
+    แหล่งตัวเลข: SET Listed Company Snapshot + research drafts ใน pipeline · ไม่ใช่คำแนะนำการลงทุน
+  </div>
+</footer>
