@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ADVICE Research Report — Stock Research OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Taviraj:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --paper:#f3efe4; --ink:#221d16; --muted:#6f6350; --card:#fffdf7; --line:#ddd2b8;
+      --accent:#d9720d; --accent-ink:#ffffff; --accent2:#0e7a6f; --accent2-bg:#dcf0ec;
+      --danger:#c53a2c; --danger-bg:#fbe2de; --good:#1f8a4c; --good-bg:#dcf1e2; --warn-bg:#fbecc9;
+      --shadow: 0 10px 28px rgba(34,29,22,.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper:#161310; --ink:#f2ead9; --muted:#c2b294; --card:#211c15; --line:#3c3323;
+        --accent:#ffab4d; --accent-ink:#1a1208; --accent2:#4fd8c8; --accent2-bg:#123330;
+        --danger:#ff8a75; --danger-bg:#3a1c16; --good:#5fe093; --good-bg:#153322; --warn-bg:#3d2e10;
+        --shadow: 0 10px 30px rgba(0,0,0,.45);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--paper); color: var(--ink); font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', -apple-system, sans-serif; font-size: 14px; line-height: 1.7; padding: 0 16px; }
+    h1, h2, h3 { font-family: 'Taviraj', 'Noto Serif Thai', serif; text-wrap: balance; letter-spacing: -.01em; }
+    a { color: var(--accent2); }
+    code { font-family: 'IBM Plex Mono', monospace; background: var(--accent2-bg); color: var(--accent2); padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+    .num, .tabular { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    .badge { display:inline-block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:5px; margin:0 2px; }
+    .badge.est { background: var(--warn-bg); color: var(--accent); }
+    .badge.unverified { background: var(--danger-bg); color: var(--danger); }
+
+    /* Shell: sticky TOC + main content */
+    .shell { max-width: 1200px; margin: 0 auto; padding-block: 28px 60px; display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 26px; align-items: start; }
+    .toc { position: sticky; top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
+    .toc strong { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 10px; }
+    .toc a { display: block; color: var(--muted); text-decoration: none; font-size: .86rem; padding: 6px 9px; border-radius: 8px; margin-bottom: 2px; }
+    .toc a:hover { background: var(--accent2-bg); color: var(--accent2); }
+    .toc a.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+    main { min-width: 0; }
+
+    /* Header */
+    .header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 22px; }
+    .eyebrow { font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+    .ticker-badge { font-size: 42px; font-weight: 700; line-height: 1; }
+    .company-name { font-size: 16px; color: var(--muted); margin-top: 4px; }
+    .meta-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .pill { border:1px solid var(--line); background:var(--card); padding:5px 11px; border-radius:999px; font-size:.82rem; color:var(--muted); }
+    .pill b { color: var(--ink); }
+    .pill.flag { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); font-weight: 600; }
+
+    /* Exec summary */
+    .exec-summary { max-width: 74ch; margin-bottom: 26px; font-size: 1rem; }
+    .exec-summary p { margin: 0 0 1em; }
+    .exec-summary p:last-child { margin-bottom: 0; }
+
+    /* Cards */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); }
+    .card-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; font-weight: 600; font-family: 'IBM Plex Sans Thai', sans-serif; }
+
+    /* KPI boxes */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; box-shadow: var(--shadow); }
+    .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi-value { font-size: 22px; font-weight: 700; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+    .kpi-change { font-size: 12px; margin-top: 2px; }
+    .up { color: var(--good); }
+    .down { color: var(--danger); }
+    .neutral { color: var(--muted); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--line); font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    td:first-child { font-family: 'IBM Plex Sans Thai', sans-serif; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--accent2-bg); }
+    .beat { color: var(--good); font-weight: 600; }
+    .miss { color: var(--danger); font-weight: 600; }
+    .inline-r { color: var(--accent); font-weight: 600; }
+
+    /* Section headers */
+    .section { margin-bottom: 24px; scroll-margin-top: 16px; }
+    .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-family: 'Taviraj', serif; }
+
+    /* Growth drivers — numbered card list */
+    ol.numbered { padding-left: 0; list-style: none; counter-reset: n; }
+    ol.numbered li { counter-increment: n; position: relative; padding: 10px 14px 10px 40px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; }
+    ol.numbered li::before { content: counter(n); position: absolute; left: 12px; top: 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--accent2); }
+    .growth-list li { border-left: 4px solid var(--accent2); }
+
+    /* Key risks — tinted callouts (full background, not just a border) so
+    severity reads at a glance rather than blending into a plain card list */
+    ol.risk-list { padding-left: 0; list-style: none; counter-reset: n; }
+    .risk-list li { counter-increment: n; position: relative; padding: 12px 16px 12px 44px; margin-bottom: 8px; background: var(--danger-bg); border-radius: 10px; font-size: 13.5px; }
+    .risk-list li::before { content: counter(n); position: absolute; left: 14px; top: 12px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--danger); }
+
+    /* Bull / Bear */
+    .bull-bear { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bull-card, .bear-card { border-radius: 12px; padding: 16px; }
+    .bull-card { background: var(--good-bg); }
+    .bear-card { background: var(--danger-bg); }
+    .bull-card .card-title { color: var(--good); }
+    .bear-card .card-title { color: var(--danger); }
+    ul.case-list { padding-left: 0; list-style: none; }
+    ul.case-list li { margin-bottom: 8px; font-size: 13px; }
+    .edge-callout { margin-top: 12px; background: var(--warn-bg); border-radius: 10px; padding: 14px 16px; font-size: 13.5px; }
+    .edge-callout .edge-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin-bottom: 5px; }
+
+    /* Sector lens */
+    .lens-field { margin-bottom: 14px; font-size: 13.5px; }
+    .lens-field .lens-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent2); font-weight: 700; margin-bottom: 4px; }
+    .lens-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+    .lens-cols h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+    ul.tight { padding-left: 1.1em; margin: 0; }
+    ul.tight li { margin: 6px 0; font-size: 13px; }
+
+    /* Metrics watchlist */
+    .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); gap: 12px; }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-name { font-weight: 500; }
+    .metric-threshold { font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--accent2-bg); color: var(--accent2); padding: 2px 8px; border-radius: 4px; }
+
+    /* Kill price banner */
+    .killbar { background: linear-gradient(135deg, var(--ink), color-mix(in srgb, var(--ink) 78%, var(--accent))); color: var(--paper); border-radius: 16px; padding: 24px 26px; margin-bottom: 24px; scroll-margin-top: 16px; }
+    .killbar h2 { color: var(--paper); margin: 0 0 14px; font-size: 20px; }
+    .killbar .field { margin: 0 0 9px; font-size: .95rem; }
+    .killbar .field b { color: var(--accent); }
+    .killbar .rationale { margin-top: 12px; font-size: .86rem; opacity: .85; }
+
+    /* Chart container */
+    .chart-wrap { height: 220px; position: relative; }
+
+    /* Footer */
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .toc nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    }
+    @media (max-width: 600px) {
+      .grid-2, .grid-3, .bull-bear, .lens-cols { grid-template-columns: 1fr; }
+      .ticker-badge { font-size: 32px; }
+      .toc nav { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sticky table of contents -->
+  <aside class="toc" aria-label="สารบัญ">
+    <strong>สารบัญ</strong>
+    <nav id="tocNav">
+      <a href="#exec">บทสรุป</a>
+      <a href="#financials">ผลประกอบการ</a>
+      <a href="#guidance">Guidance</a>
+      <a href="#growth">Growth Drivers</a>
+      <a href="#risks">ความเสี่ยง</a>
+      <a href="#bullbear">Bull/Bear</a>
+      <a href="#lens">Sector Lens</a>
+      <a href="#watch">Metrics</a>
+      <a href="#kill">Kill Price</a>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- Header -->
+    <div class="header">
+      <div class="eyebrow">Stock Research OS · 2026-09-23</div>
+      <div class="ticker-badge">ADVICE</div>
+      <div class="company-name">Advice IT Infinite Public Company Limited</div>
+      <div class="meta-row">
+        <span class="pill">Sector <b>Technology</b></span>
+        <span class="pill">Industry <b>Electronics & Computer Distribution</b></span>
+        <span class="pill">Market Cap <b>N/A</b></span>
+        <span class="pill" style="color:var(--accent2);font-weight:700;background:var(--accent2-bg);padding:2px 10px;border-radius:12px;">Lynch: Stalwart</span>
+      </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="exec-summary section" id="exec"></div>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Revenue (TTM)</div>
+        <div class="kpi-value">$17.4B</div>
+        <div class="kpi-change up">13.2% YoY</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Gross Margin</div>
+        <div class="kpi-value">11.5%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Operating Margin</div>
+        <div class="kpi-value">3.8%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Free Cash Flow</div>
+        <div class="kpi-value">$-0.3B</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">P/E (TTM)</div>
+        <div class="kpi-value">11.1x</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Forward P/E</div>
+        <div class="kpi-value">10.4x</div>
+      </div>
+      <div class="kpi" id="convictionKpi" hidden>
+        <div class="kpi-label">Conviction</div>
+        <div class="kpi-value" id="convictionValue"></div>
+        <div class="kpi-change down" id="convictionSub"></div>
+      </div>
+    </div>
+
+    <!-- Lynch Card -->
+      <div class="card section" style="border-left:3px solid var(--accent2);">
+    <div class="card-title" style="display:flex;align-items:center;gap:10px;">
+      Peter Lynch Classification
+      <span style="color:var(--accent2);font-weight:700;background:var(--accent2-bg);padding:2px 10px;border-radius:12px;">Stalwart 🏛️</span>
+    </div>
+    <p style="margin:0 0 10px;color:var(--muted);line-height:1.6;">Revenue CAGR FY2022-2025 = 4.8% (ทั้งรอบ); FY2023-2025 = 10.8% — อยู่ใน Stalwart band 10-12%/ปี บริษัทอายุสิบกว่าปี จ่ายปันผลสม่ำเสมอ ไม่มี proprietary IP และดำเนินธุรกิจในตลาด mature. อย่างไรก็ตาม H1 2026 EPS growth +82% YoY จาก GPM inflection ทำให้ earnings dynamics ชั่วคราวคล้าย Fast Grower.</p>
+    <p style="margin:0;color:var(--muted);line-height:1.6;"><strong style="color:var(--accent2);">Implication:</strong> Stalwart stocks ควรซื้อที่ valuation สมเหตุสมผล — P/E 11x บน old normal GPM = fair, upside จำกัด. Key question: ถ้า GPM step-change เป็น structural → PEG = 11 / 90 = 0.12 = ถูกมากในกรอบ Lynch; ถ้า GPM revert → P/E 18x บน Stalwart = แพงและควร avoid. Conviction ceiling: moderate — ต้องรอ Q3 2026 confirm GPM ก่อนวาง full position.
+
+---</p>
+  </div>
+
+    <!-- Financials anchor -->
+    <div id="financials"></div>
+
+    <!-- Charts Row 1: Annual -->
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-title">Annual Revenue — 5 Years ($B)</div>
+        <div class="chart-wrap"><canvas id="annualRevenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Annual Margins — 5 Years</div>
+        <div class="chart-wrap"><canvas id="annualMarginChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2: Quarterly -->
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-title">Quarterly Revenue — 8 Quarters ($B)</div>
+        <div class="chart-wrap"><canvas id="quarterlyRevenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Quarterly YoY & QoQ Growth %</div>
+        <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Annual Table -->
+    <div class="section">
+      <div class="section-title">Annual Performance — 5 Years</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fiscal Year</th><th>Revenue</th><th>YoY</th>
+              <th>Gross Margin</th><th>Op. Margin</th>
+              <th>Net Income</th><th>FCF</th><th>EPS</th>
+            </tr>
+          </thead>
+          <tbody id="annualTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quarterly Table -->
+    <div class="section">
+      <div class="section-title">Quarterly Performance — 8 Quarters</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quarter</th><th>Revenue</th><th>YoY</th><th>QoQ</th>
+              <th>Gross Margin</th><th>Op. Margin</th>
+              <th>Net Income</th><th>FCF</th><th>EPS</th>
+            </tr>
+          </thead>
+          <tbody id="quarterlyTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Guidance Tracker -->
+    <div class="section" id="guidance">
+      <div class="section-title">Guidance Tracker</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Metric</th>
+              <th>Guidance</th>
+              <th>Actual</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="guidanceTable">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Growth Drivers -->
+    <div class="section" id="growth">
+      <div class="section-title">Key Growth Drivers</div>
+      <ol class="numbered growth-list" id="growthList"></ol>
+    </div>
+
+    <!-- Key Risks -->
+    <div class="section" id="risks">
+      <div class="section-title">Key Risks</div>
+      <ol class="numbered risk-list" id="riskList"></ol>
+    </div>
+
+    <!-- Bull / Bear -->
+    <div class="section" id="bullbear">
+      <div class="section-title">Bull vs Bear Case</div>
+      <div class="bull-bear">
+        <div class="bull-card">
+          <div class="card-title">Bull Case</div>
+          <ul class="case-list" id="bullList"></ul>
+        </div>
+        <div class="bear-card">
+          <div class="card-title">Bear Case</div>
+          <ul class="case-list" id="bearList"></ul>
+        </div>
+      </div>
+      <div class="edge-callout" id="edgeCallout" hidden>
+        <span class="edge-label">Edge / Non-Consensus View</span>
+        <span id="edgeText"></span>
+      </div>
+    </div>
+
+    <!-- Sector Lens -->
+    <div class="section" id="lens" hidden>
+      <div class="section-title">Sector Lens</div>
+      <div class="card">
+        <div class="lens-field"><span class="lens-label">Sector classification</span><span id="lensClassification"></span></div>
+        <div class="lens-field"><span class="lens-label">TAM &amp; runway</span><span id="lensTam"></span></div>
+        <div class="lens-field"><span class="lens-label">What the current price prices in</span><span id="lensPricedIn"></span></div>
+        <div class="lens-field"><span class="lens-label">Narrative</span><span id="lensNarrative"></span></div>
+        <div class="lens-cols">
+          <div>
+            <h4>Sector metrics this quarter</h4>
+            <ul class="tight" id="lensMetrics"></ul>
+          </div>
+          <div>
+            <h4>Still-open sector questions</h4>
+            <ul class="tight" id="lensQuestions"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Metrics to Watch -->
+    <div class="section" id="watch">
+      <div class="section-title">Key Metrics to Watch (Next Earnings)</div>
+      <div class="card" id="metricsWatch"></div>
+    </div>
+
+    <!-- Kill Price & Conviction -->
+    <div class="killbar" id="killbar" hidden>
+      <h2 id="kill">Kill Price &amp; Conviction</h2>
+      <p class="field"><b>Conviction:</b> <span id="killConviction"></span></p>
+      <p class="field"><b>Kill Price:</b> <span id="killPrice"></span></p>
+      <p class="field"><b>Kill Trigger (non-price):</b> <span id="killTrigger"></span></p>
+      <p class="rationale" id="killRationale"></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Stock Research OS — Generated 2026-09-23</span>
+      <span>Data: SEC EDGAR / SET + yfinance | Agents: Claude + MiniMax M2.7</span>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── DATA (filled by generate_html.py) ──────────────────────────────────────
+const REPORT_DATA = {
+  "ticker": "ADVICE",
+  "company_name": "Advice IT Infinite Public Company Limited",
+  "sector": "Technology",
+  "industry": "Electronics & Computer Distribution",
+  "market_cap": "N/A",
+  "report_date": "2026-09-23",
+  "revenue_ttm": "$17.4B",
+  "revenue_growth": "13.2%",
+  "gross_margin": "11.5%",
+  "op_margin": "3.8%",
+  "fcf_ttm": "$-0.3B",
+  "pe_ratio": 11.1,
+  "fwd_pe": 10.4,
+  "annual_rows": [
+    {
+      "label": "FY2025",
+      "revenue_b": 16.6,
+      "gross_margin_pct": 10.3,
+      "op_margin_pct": 2.0,
+      "net_margin_pct": 1.6,
+      "net_income_b": 0.3,
+      "fcf_b": 0.1,
+      "eps": 0.43,
+      "yoy_growth": 16.9
+    },
+    {
+      "label": "FY2024",
+      "revenue_b": 14.2,
+      "gross_margin_pct": 10.3,
+      "op_margin_pct": 2.0,
+      "net_margin_pct": 1.6,
+      "net_income_b": 0.2,
+      "fcf_b": -0.0,
+      "eps": 0.38,
+      "yoy_growth": 5.2
+    },
+    {
+      "label": "FY2023",
+      "revenue_b": 13.5,
+      "gross_margin_pct": 8.7,
+      "op_margin_pct": 1.8,
+      "net_margin_pct": 1.3,
+      "net_income_b": 0.2,
+      "fcf_b": 0.2,
+      "eps": 0.38,
+      "yoy_growth": -6.3
+    },
+    {
+      "label": "FY2022",
+      "revenue_b": 14.4,
+      "gross_margin_pct": 8.5,
+      "op_margin_pct": 1.8,
+      "net_margin_pct": 1.4,
+      "net_income_b": 0.2,
+      "fcf_b": -0.1,
+      "eps": 0.62,
+      "yoy_growth": 0
+    }
+  ],
+  "quarters": [
+    {
+      "label": "Q2 2026",
+      "revenue_b": 4.54,
+      "yoy_growth": 0,
+      "qoq_growth": 0,
+      "gross_margin_pct": 12.5,
+      "op_margin_pct": 3.8,
+      "net_margin_pct": 3.0,
+      "net_income_b": 0.14,
+      "fcf_b": 0.0,
+      "eps": 0.22
+    },
+    {
+      "label": "Q1 2026",
+      "revenue_b": 4.31,
+      "yoy_growth": 0,
+      "qoq_growth": -5.1,
+      "gross_margin_pct": 12.5,
+      "op_margin_pct": 3.4,
+      "net_margin_pct": 2.7,
+      "net_income_b": 0.12,
+      "fcf_b": 0.0,
+      "eps": 0.19
+    },
+    {
+      "label": "Q4 2025",
+      "revenue_b": 4.3,
+      "yoy_growth": 0,
+      "qoq_growth": -0.2,
+      "gross_margin_pct": 10.5,
+      "op_margin_pct": 1.9,
+      "net_margin_pct": 1.5,
+      "net_income_b": 0.06,
+      "fcf_b": 0.0,
+      "eps": 0.1
+    },
+    {
+      "label": "Q3 2025",
+      "revenue_b": 4.29,
+      "yoy_growth": 0,
+      "qoq_growth": -0.2,
+      "gross_margin_pct": 10.2,
+      "op_margin_pct": 2.0,
+      "net_margin_pct": 1.5,
+      "net_income_b": 0.07,
+      "fcf_b": 0.0,
+      "eps": 0.11
+    },
+    {
+      "label": "Q2 2025",
+      "revenue_b": 4.01,
+      "yoy_growth": 0,
+      "qoq_growth": -6.5,
+      "gross_margin_pct": 10.4,
+      "op_margin_pct": 2.4,
+      "net_margin_pct": 1.9,
+      "net_income_b": 0.08,
+      "fcf_b": 0.0,
+      "eps": 0.12
+    },
+    {
+      "label": "Q1 2025",
+      "revenue_b": 3.99,
+      "yoy_growth": 0,
+      "qoq_growth": -0.5,
+      "gross_margin_pct": 10.3,
+      "op_margin_pct": 2.0,
+      "net_margin_pct": 1.6,
+      "net_income_b": 0.06,
+      "fcf_b": 0.0,
+      "eps": 0.1
+    },
+    {
+      "label": "Q4 2024",
+      "revenue_b": 3.5,
+      "yoy_growth": 0,
+      "qoq_growth": -12.3,
+      "gross_margin_pct": 11.0,
+      "op_margin_pct": 1.9,
+      "net_margin_pct": 1.5,
+      "net_income_b": 0.05,
+      "fcf_b": 0.0,
+      "eps": 0.07
+    },
+    {
+      "label": "Q3 2024",
+      "revenue_b": 3.75,
+      "yoy_growth": 0,
+      "qoq_growth": 7.1,
+      "gross_margin_pct": 10.1,
+      "op_margin_pct": 2.1,
+      "net_margin_pct": 1.7,
+      "net_income_b": 0.06,
+      "fcf_b": 0.0,
+      "eps": 0.11
+    }
+  ],
+  "guidance": [
+    {
+      "period": "Q3 2025",
+      "metric": "EPS",
+      "guidance": "0.105",
+      "actual": "0.106",
+      "result": "+0.95% **Beat**"
+    },
+    {
+      "period": "Q4 2025",
+      "metric": "EPS",
+      "guidance": "0.135",
+      "actual": "0.101",
+      "result": "\u221225.2% **Miss**"
+    },
+    {
+      "period": "Q1 2026",
+      "metric": "EPS",
+      "guidance": "0.160",
+      "actual": "0.187",
+      "result": "+16.9% **Beat**"
+    },
+    {
+      "period": "Q2 2026",
+      "metric": "EPS",
+      "guidance": "0.2125",
+      "actual": "0.221",
+      "result": "+4.0% **Beat**"
+    },
+    {
+      "period": "Q3 2026",
+      "metric": "EPS",
+      "guidance": "TBD",
+      "actual": "TBD",
+      "result": "\u2014"
+    },
+    {
+      "period": "Q3 2026",
+      "metric": "Revenue",
+      "guidance": "TBD",
+      "actual": "TBD",
+      "result": "\u2014"
+    }
+  ],
+  "bull_case": [
+    "<strong>Scenario:</strong> GPM 12.5% \u0e40\u0e1b\u0e47\u0e19 structural \u0e08\u0e32\u0e01 mix shift \u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01 wholesale + \u0e42\u0e15 retail/corporate",
+    "<strong>Key assumption:</strong> Wholesale \u0e25\u0e14\u0e08\u0e32\u0e01 36% \u2192 28% \u0e02\u0e2d\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e22\u0e01 blended GPM \u0e16\u0e32\u0e27\u0e23 +150\u2013200bps; Corporate CAGR 15% \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e35\u0e01 50bps",
+    "<strong>Price implication:</strong> FY2026E NI ~500M \u2192 P/E = 8.4x; re-rate \u0e2a\u0e39\u0e48 10\u201312x \u0e2b\u0e25\u0e31\u0e07 Q3 confirm = ~8.1\u20139.7 THB",
+    "<strong>Probability (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23):</strong> 35%"
+  ],
+  "bear_case": [
+    "<strong>Scenario:</strong> GPM 12.5% \u0e04\u0e37\u0e2d vendor rebate timing; Q3\u2013Q4 2026 revert \u0e01\u0e25\u0e31\u0e1a 10.4%; inventory markdown \u0e0b\u0e49\u0e33\u0e40\u0e15\u0e34\u0e21",
+    "<strong>Key assumption:</strong> H1 rebate \u0e23\u0e31\u0e1a\u0e23\u0e39\u0e49\u0e17\u0e38\u0e01\u0e1b\u0e35 Q1\u2013Q2; mix shift \u0e2d\u0e18\u0e34\u0e1a\u0e32\u0e22\u0e44\u0e14\u0e49\u0e41\u0e04\u0e48 50\u2013100bps \u0e08\u0e32\u0e01 210bps \u0e17\u0e35\u0e48\u0e40\u0e2b\u0e47\u0e19; \u0e2a\u0e48\u0e27\u0e19\u0e17\u0e35\u0e48\u0e40\u0e2b\u0e25\u0e37\u0e2d = non-recurring",
+    "<strong>Price implication:</strong> FY2026E NI ~230M \u2192 fair value 8x = ~2.97\u20133.34 THB; combined markdown + dilution = 3.5\u20134.0 THB",
+    "<strong>Probability (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23):</strong> 65%"
+  ],
+  "key_metrics": [],
+  "lynch": {
+    "category": "Stalwart",
+    "why": "Revenue CAGR FY2022-2025 = 4.8% (\u0e17\u0e31\u0e49\u0e07\u0e23\u0e2d\u0e1a); FY2023-2025 = 10.8% \u2014 \u0e2d\u0e22\u0e39\u0e48\u0e43\u0e19 Stalwart band 10-12%/\u0e1b\u0e35 \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e2d\u0e32\u0e22\u0e38\u0e2a\u0e34\u0e1a\u0e01\u0e27\u0e48\u0e32\u0e1b\u0e35 \u0e08\u0e48\u0e32\u0e22\u0e1b\u0e31\u0e19\u0e1c\u0e25\u0e2a\u0e21\u0e48\u0e33\u0e40\u0e2a\u0e21\u0e2d \u0e44\u0e21\u0e48\u0e21\u0e35 proprietary IP \u0e41\u0e25\u0e30\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e18\u0e38\u0e23\u0e01\u0e34\u0e08\u0e43\u0e19\u0e15\u0e25\u0e32\u0e14 mature. \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e44\u0e23\u0e01\u0e47\u0e15\u0e32\u0e21 H1 2026 EPS growth +82% YoY \u0e08\u0e32\u0e01 GPM inflection \u0e17\u0e33\u0e43\u0e2b\u0e49 earnings dynamics \u0e0a\u0e31\u0e48\u0e27\u0e04\u0e23\u0e32\u0e27\u0e04\u0e25\u0e49\u0e32\u0e22 Fast Grower.",
+    "implication": "Stalwart stocks \u0e04\u0e27\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e17\u0e35\u0e48 valuation \u0e2a\u0e21\u0e40\u0e2b\u0e15\u0e38\u0e2a\u0e21\u0e1c\u0e25 \u2014 P/E 11x \u0e1a\u0e19 old normal GPM = fair, upside \u0e08\u0e33\u0e01\u0e31\u0e14. Key question: \u0e16\u0e49\u0e32 GPM step-change \u0e40\u0e1b\u0e47\u0e19 structural \u2192 PEG = 11 / 90 = 0.12 = \u0e16\u0e39\u0e01\u0e21\u0e32\u0e01\u0e43\u0e19\u0e01\u0e23\u0e2d\u0e1a Lynch; \u0e16\u0e49\u0e32 GPM revert \u2192 P/E 18x \u0e1a\u0e19 Stalwart = \u0e41\u0e1e\u0e07\u0e41\u0e25\u0e30\u0e04\u0e27\u0e23 avoid. Conviction ceiling: moderate \u2014 \u0e15\u0e49\u0e2d\u0e07\u0e23\u0e2d Q3 2026 confirm GPM \u0e01\u0e48\u0e2d\u0e19\u0e27\u0e32\u0e07 full position.\n\n---"
+  },
+  "exec_summary_html": "<p>)</p><p>\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 \u0e41\u0e2d\u0e14\u0e44\u0e27\u0e0b\u0e4c \u0e44\u0e2d\u0e17\u0e35 \u0e2d\u0e34\u0e19\u0e1f\u0e34\u0e19\u0e34\u0e17 \u0e08\u0e33\u0e01\u0e31\u0e14 (\u0e21\u0e2b\u0e32\u0e0a\u0e19) (SET: ADVICE) \u0e04\u0e37\u0e2d\u0e1c\u0e39\u0e49\u0e04\u0e49\u0e32\u0e1b\u0e25\u0e35\u0e01\u0e41\u0e25\u0e30\u0e08\u0e31\u0e14\u0e08\u0e33\u0e2b\u0e19\u0e48\u0e32\u0e22\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32 IT \u0e17\u0e35\u0e48\u0e40\u0e19\u0e49\u0e19\u0e15\u0e25\u0e32\u0e14\u0e15\u0e48\u0e32\u0e07\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e40\u0e1b\u0e47\u0e19\u0e2b\u0e25\u0e31\u0e01 \u0e08\u0e33\u0e2b\u0e19\u0e48\u0e32\u0e22\u0e2a\u0e21\u0e32\u0e23\u0e4c\u0e15\u0e42\u0e1f\u0e19 \u0e04\u0e2d\u0e21\u0e1e\u0e34\u0e27\u0e40\u0e15\u0e2d\u0e23\u0e4c \u0e2d\u0e38\u0e1b\u0e01\u0e23\u0e13\u0e4c\u0e15\u0e48\u0e2d\u0e1e\u0e48\u0e27\u0e07 \u0e41\u0e25\u0e30 accessories \u0e1c\u0e48\u0e32\u0e19 5 \u0e0a\u0e48\u0e2d\u0e07\u0e17\u0e32\u0e07 \u0e44\u0e14\u0e49\u0e41\u0e01\u0e48 \u0e2a\u0e32\u0e02\u0e32 (Retail Branches) 46%, \u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c (Retail Online) 20%, \u0e02\u0e32\u0e22\u0e2a\u0e48\u0e07 (Wholesale) 28%, \u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 (Corporate) 5% \u0e41\u0e25\u0e30\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 (Services) 1% \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 (Revenue) FY2025 \u0e2d\u0e22\u0e39\u0e48\u0e17\u0e35\u0e48 16,580 \u0e25\u0e25. \u0e1a\u0e32\u0e17 (+16.7% YoY) \u0e41\u0e25\u0e30 TTM Revenue = 17,438 \u0e25\u0e25. \u0e1a\u0e32\u0e17 \u0e1b\u0e23\u0e30\u0e40\u0e14\u0e47\u0e19\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e02\u0e13\u0e30\u0e19\u0e35\u0e49\u0e04\u0e37\u0e2d \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e01\u0e33\u0e44\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e49\u0e19 (Gross Margin / GPM) \u0e17\u0e35\u0e48\u0e01\u0e23\u0e30\u0e42\u0e14\u0e14\u0e02\u0e36\u0e49\u0e19 +210bps \u0e43\u0e19 H1 2026 \u0e08\u0e32\u0e01\u0e0a\u0e48\u0e27\u0e07 8.5\u201310.5% \u0e15\u0e25\u0e2d\u0e14 4 \u0e1b\u0e35\u0e17\u0e35\u0e48\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e32 \u0e21\u0e32\u0e2d\u0e22\u0e39\u0e48\u0e17\u0e35\u0e48\u0e23\u0e30\u0e14\u0e31\u0e1a 12.5% \u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07 2 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a \u0e2a\u0e48\u0e07\u0e1c\u0e25\u0e43\u0e2b\u0e49\u0e01\u0e33\u0e44\u0e23\u0e2a\u0e38\u0e17\u0e18\u0e34 (Net Income) H1 2026 \u0e1e\u0e38\u0e48\u0e07 +82.5% YoY \u0e41\u0e15\u0e48\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38\u0e02\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19\u0e19\u0e35\u0e49\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e08\u0e32\u0e01\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23\u0e43\u0e14\u0e46 \u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17 \u0e27\u0e48\u0e32\u0e21\u0e32\u0e08\u0e32\u0e01 vendor rebate \u0e0a\u0e31\u0e48\u0e27\u0e04\u0e23\u0e32\u0e27 \u0e2b\u0e23\u0e37\u0e2d mix shift \u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07 \u0e17\u0e33\u0e43\u0e2b\u0e49\u0e40\u0e01\u0e34\u0e14 valuation fork \u0e17\u0e35\u0e48\u0e02\u0e31\u0e49\u0e27\u0e2a\u0e38\u0e14: \u0e16\u0e49\u0e32\u0e40\u0e1b\u0e47\u0e19 structural \u2192 \u0e2b\u0e38\u0e49\u0e19\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e17\u0e35\u0e48 P/E 8.4x \u0e16\u0e39\u0e01\u0e21\u0e32\u0e01; \u0e16\u0e49\u0e32 transient \u2192 \u0e01\u0e33\u0e44\u0e23\u0e2d\u0e32\u0e08\u0e2b\u0e14 45\u201355% \u0e41\u0e25\u0e30\u0e2b\u0e38\u0e49\u0e19\u0e41\u0e1e\u0e07\u0e17\u0e35\u0e48 18x \u0e43\u0e19\u0e10\u0e32\u0e19\u0e30 Stalwart ADVICE \u0e04\u0e27\u0e23\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e21\u0e39\u0e25\u0e04\u0e48\u0e32\u0e08\u0e32\u0e01\u0e04\u0e27\u0e32\u0e21\u0e22\u0e31\u0e48\u0e07\u0e22\u0e37\u0e19\u0e02\u0e2d\u0e07 earnings power \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 earnings peak \u0e0a\u0e31\u0e48\u0e27\u0e04\u0e23\u0e32\u0e27 \u0e04\u0e33\u0e15\u0e2d\u0e1a\u0e2d\u0e22\u0e39\u0e48\u0e17\u0e35\u0e48 GPM Q3 2026 (\u0e04\u0e32\u0e14\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19 \u0e1e.\u0e22. 2569)</p><p>---</p>",
+  "growth_html": "<ol><li><strong>AI smartphone supercycle:</strong> \u0e2a\u0e21\u0e32\u0e23\u0e4c\u0e15\u0e42\u0e1f\u0e19 flagship \u0e17\u0e35\u0e48\u0e23\u0e2d\u0e07\u0e23\u0e31\u0e1a AI \u0e08\u0e32\u0e01 Apple/Samsung \u0e40\u0e23\u0e48\u0e07\u0e23\u0e2d\u0e1a replacement cycle ADVICE \u0e43\u0e19\u0e10\u0e32\u0e19\u0e30 authorized reseller \u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a launch-day allocation \u2014 \u0e0b\u0e36\u0e48\u0e07\u0e40\u0e1b\u0e47\u0e19 transaction \u0e17\u0e35\u0e48\u0e21\u0e35 GPM \u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e1e\u0e2d\u0e23\u0e4c\u0e15 \u2014 \u0e1e\u0e23\u0e49\u0e2d\u0e21 accessories attach rate \u0e17\u0e35\u0e48\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e21\u0e39\u0e25\u0e04\u0e48\u0e32\u0e15\u0e48\u0e2d\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c</li><li><strong>\u0e01\u0e32\u0e23\u0e02\u0e22\u0e32\u0e22\u0e2a\u0e32\u0e02\u0e32\u0e41\u0e25\u0e30 mix shift:</strong> \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e2a\u0e32\u0e02\u0e32 (Retail Branches) \u0e42\u0e15 +33% YoY \u0e43\u0e19 FY2025 \u0e16\u0e36\u0e07 7,628 \u0e25\u0e25. (46% \u0e02\u0e2d\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e23\u0e27\u0e21) \u0e02\u0e13\u0e30\u0e17\u0e35\u0e48 segment Wholesale GPM \u0e1a\u0e32\u0e07 (\u0e04\u0e32\u0e14\u0e27\u0e48\u0e32 4\u20136%) \u0e17\u0e23\u0e07\u0e15\u0e31\u0e27/\u0e25\u0e14\u0e25\u0e07\u0e08\u0e32\u0e01 5,165M (FY2022) \u2192 4,671M (FY2025) mix shift \u0e08\u0e32\u0e01\u0e0a\u0e48\u0e2d\u0e07\u0e17\u0e32\u0e07 margin \u0e1a\u0e32\u0e07\u0e44\u0e1b\u0e2b\u0e32 channel margin \u0e2b\u0e19\u0e32 \u0e40\u0e1b\u0e47\u0e19 structural driver \u0e17\u0e35\u0e48\u0e19\u0e48\u0e32\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e16\u0e37\u0e2d\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e02\u0e2d\u0e07 GPM inflection \u0e41\u0e21\u0e49\u0e08\u0e30\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 SSSG vs. new store \u0e41\u0e22\u0e01</li><li><strong>\u0e41\u0e23\u0e07\u0e02\u0e31\u0e1a\u0e08\u0e32\u0e01 Corporate/B2B:</strong> \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e2d\u0e07\u0e04\u0e4c\u0e01\u0e23 (Corporate) \u0e42\u0e15 CAGR ~15%/\u0e1b\u0e35 (FY2022\u20132025) = 3 \u0e40\u0e17\u0e48\u0e32\u0e02\u0e2d\u0e07 group rate; Windows 10 EOL \u0e15.\u0e04. 2568 \u0e2a\u0e23\u0e49\u0e32\u0e07 B2B PC refresh wave; \u0e16\u0e49\u0e32 corporate segment margin \u0e2a\u0e39\u0e07\u0e01\u0e27\u0e48\u0e32 consumer (\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22) \u2192 \u0e40\u0e1b\u0e47\u0e19 GPM lifter \u0e17\u0e35\u0e48\u0e22\u0e31\u0e48\u0e07\u0e22\u0e37\u0e19</li><li><strong>\u0e40\u0e04\u0e23\u0e37\u0e2d\u0e02\u0e48\u0e32\u0e22\u0e15\u0e48\u0e32\u0e07\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e17\u0e35\u0e48 differentiates:</strong> \u0e04\u0e27\u0e32\u0e21\u0e2b\u0e19\u0e32\u0e41\u0e19\u0e48\u0e19\u0e2a\u0e32\u0e02\u0e32\u0e43\u0e19 secondary markets \u0e04\u0e37\u0e2d positioning advantage \u0e17\u0e35\u0e48\u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14 \u0e15\u0e48\u0e32\u0e07\u0e08\u0e32\u0e01 COM7/CPW \u0e17\u0e35\u0e48\u0e40\u0e19\u0e49\u0e19 Bangkok \u0e04\u0e48\u0e32\u0e41\u0e23\u0e07\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 400 \u0e1a\u0e32\u0e17/\u0e27\u0e31\u0e19 (\u0e21.\u0e04. 2567) \u0e2b\u0e19\u0e38\u0e19 purchasing power \u0e10\u0e32\u0e19\u0e23\u0e32\u0e01</li><li><strong>Wholesale-to-retail mix normalization:</strong> Wholesale \u0e25\u0e14\u0e08\u0e32\u0e01 36% \u0e02\u0e2d\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 FY2022 \u2192 28% \u0e43\u0e19 FY2025 \u0e02\u0e13\u0e30\u0e17\u0e35\u0e48 retail branches \u0e42\u0e15 +38% \u0e01\u0e32\u0e23\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e41\u0e1b\u0e25\u0e07\u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e17\u0e35\u0e48\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e44\u0e14\u0e49\u0e08\u0e32\u0e01\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 3 \u0e1b\u0e35\u0e19\u0e35\u0e49\u0e40\u0e1b\u0e47\u0e19\u0e01\u0e25\u0e44\u0e01 GPM improvement \u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e02\u0e36\u0e49\u0e19\u0e01\u0e31\u0e1a vendor rebate timing</li></ol>",
+  "risks_html": "<ol><li><strong>\u0e04\u0e27\u0e32\u0e21\u0e22\u0e31\u0e48\u0e07\u0e22\u0e37\u0e19\u0e02\u0e2d\u0e07 GPM (\u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a 1):</strong> GPM 12.5% \u0e43\u0e19 H1 2026 \u0e04\u0e37\u0e2d\u0e01\u0e32\u0e23\u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01 band 8.5\u201310.5% \u0e17\u0e35\u0e48\u0e22\u0e37\u0e19\u0e21\u0e32 4 \u0e1b\u0e35 \u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e21\u0e35\u0e04\u0e33\u0e2d\u0e18\u0e34\u0e1a\u0e32\u0e22\u0e43\u0e19 MD&A \u0e2b\u0e23\u0e37\u0e2d filing \u0e43\u0e14\u0e46 \u0e16\u0e49\u0e32\u0e21\u0e32\u0e08\u0e32\u0e01 semi-annual vendor rebate \u0e17\u0e35\u0e48\u0e23\u0e31\u0e1a\u0e23\u0e39\u0e49\u0e43\u0e19 H1 \u2192 Q3\u2013Q4 2026 GPM \u0e08\u0e30 revert \u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34: \u0e01\u0e33\u0e44\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e49\u0e19 (Gross Profit) \u0e25\u0e14\u0e08\u0e32\u0e01 568M \u2192 ~472M; \u0e01\u0e33\u0e44\u0e23\u0e08\u0e32\u0e01\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e07\u0e32\u0e19 (Operating Income) \u0e25\u0e14\u0e08\u0e32\u0e01 175M \u2192 ~79M (\u221255%); FY2026E NI \u2248 230M; P/E \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 11x \u0e01\u0e23\u0e30\u0e42\u0e14\u0e14\u0e40\u0e1b\u0e47\u0e19 18.3x \u2014 \u0e41\u0e1e\u0e07\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a IT distributor</li><li><strong>\u0e2a\u0e15\u0e4a\u0e2d\u0e01\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e2a\u0e39\u0e07\u0e41\u0e25\u0e30\u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07\u0e25\u0e49\u0e32\u0e2a\u0e21\u0e31\u0e22 (Inventory Obsolescence):</strong> \u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d +83% \u0e40\u0e1b\u0e47\u0e19 2,967M \u0e43\u0e19 6 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a \u0e02\u0e13\u0e30\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e42\u0e15\u0e41\u0e04\u0e48 +13% DIO \u2248 62\u201367 \u0e27\u0e31\u0e19 \u0e2a\u0e39\u0e07\u0e01\u0e27\u0e48\u0e32 risk threshold 45\u201350 \u0e27\u0e31\u0e19 \u0e2b\u0e32\u0e01 markdown 10% \u0e02\u0e2d\u0e07 inventory = charge ~297M = <strong>~112% \u0e02\u0e2d\u0e07\u0e01\u0e33\u0e44\u0e23\u0e2a\u0e38\u0e17\u0e18\u0e34 FY2025 (267M)</strong> \u2014 \u0e25\u0e1a\u0e01\u0e33\u0e44\u0e23\u0e17\u0e31\u0e49\u0e07\u0e1b\u0e35\u0e17\u0e34\u0e49\u0e07; iPhone 17 launch \u0e43\u0e19 Q4 2569 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e41\u0e23\u0e07\u0e01\u0e14\u0e14\u0e31\u0e19 markdown</li><li><strong>\u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34 Dilution \u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07 (uncovered risk \u2014 flagged by red team):</strong> \u0e08\u0e33\u0e19\u0e27\u0e19\u0e2b\u0e38\u0e49\u0e19\u0e02\u0e22\u0e32\u0e22\u0e08\u0e32\u0e01 300M (Q1 2565) \u2192 620M \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 = +107% \u0e43\u0e19 4 \u0e1b\u0e35 \u0e43\u0e19 3 \u0e08\u0e32\u0e01 4 \u0e1b\u0e35 \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e08\u0e48\u0e32\u0e22\u0e1b\u0e31\u0e19\u0e1c\u0e25 (Dividends) \u0e40\u0e01\u0e34\u0e19 OCF \u0e42\u0e14\u0e22\u0e43\u0e0a\u0e49\u0e40\u0e07\u0e34\u0e19\u0e08\u0e32\u0e01\u0e01\u0e32\u0e23\u0e2d\u0e2d\u0e01\u0e2b\u0e38\u0e49\u0e19\u0e2b\u0e23\u0e37\u0e2d\u0e01\u0e39\u0e49 TTM FCF = \u2212265M; \u0e1b\u0e31\u0e19\u0e1c\u0e25\u0e15\u0e48\u0e2d\u0e1b\u0e35 ~211M \u2192 cash drain \u0e23\u0e27\u0e21 ~476M \u0e15\u0e48\u0e2d\u0e1b\u0e35 \u0e40\u0e17\u0e35\u0e22\u0e1a\u0e01\u0e31\u0e1a cash \u0e40\u0e2b\u0e25\u0e37\u0e2d 132M \u0e40\u0e17\u0e48\u0e32\u0e19\u0e31\u0e49\u0e19 \u2014 \u0e04\u0e13\u0e34\u0e15\u0e28\u0e32\u0e2a\u0e15\u0e23\u0e4c\u0e44\u0e21\u0e48\u0e22\u0e31\u0e48\u0e07\u0e22\u0e37\u0e19\u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e21\u0e35 equity raise \u0e2b\u0e23\u0e37\u0e2d\u0e15\u0e31\u0e14\u0e1b\u0e31\u0e19\u0e1c\u0e25 dilution 20% (620M \u2192 744M \u0e2b\u0e38\u0e49\u0e19) \u0e08\u0e30\u0e01\u0e14 EPS \u0e08\u0e32\u0e01 ~0.83 \u2192 ~0.69 \u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e21\u0e35\u0e01\u0e32\u0e23\u0e40\u0e2a\u0e37\u0e48\u0e2d\u0e21\u0e16\u0e2d\u0e22\u0e40\u0e0a\u0e34\u0e07 fundamental \u0e43\u0e14\u0e46</li><li><strong>SG&A \u0e40\u0e15\u0e34\u0e1a\u0e42\u0e15\u0e40\u0e23\u0e47\u0e27\u0e01\u0e27\u0e48\u0e32 Revenue:</strong> SG&A Q2 2026 = 393M (+21.7% YoY) \u0e40\u0e17\u0e35\u0e22\u0e1a Revenue +13.2%; SG&A/Gross Profit = 69.2% Operating leverage \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e21\u0e32\u0e08\u0e32\u0e01 GPM \u0e40\u0e1e\u0e35\u0e22\u0e07\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e40\u0e14\u0e35\u0e22\u0e27 \u2014 \u0e44\u0e21\u0e48\u0e21\u0e35 cost discipline \u0e40\u0e1b\u0e47\u0e19 second lever \u0e16\u0e49\u0e32 GPM revert \u0e01\u0e25\u0e31\u0e1a 10.4%: SG&A/GP \u0e02\u0e36\u0e49\u0e19\u0e40\u0e1b\u0e47\u0e19 ~83% \u0e41\u0e25\u0e30 Operating Income \u0e40\u0e2b\u0e25\u0e37\u0e2d ~79M \u0e15\u0e48\u0e2d\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a</li><li><strong>Apple D2C \u0e17\u0e33\u0e25\u0e32\u0e22 competitive advantage \u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07:</strong> Apple \u0e40\u0e1b\u0e34\u0e14 Apple Store \u0e43\u0e19\u0e44\u0e17\u0e22 (ICONSIAM, Q1 2567) \u0e02\u0e49\u0e2d\u0e44\u0e14\u0e49\u0e40\u0e1b\u0e23\u0e35\u0e22\u0e1a\u0e02\u0e2d\u0e07 ADVICE \u0e43\u0e19\u0e15\u0e25\u0e32\u0e14 premium \u2014 launch-day iPhone allocation \u0e41\u0e25\u0e30 accessories attach margin \u0e2a\u0e39\u0e07 \u2014 \u0e04\u0e37\u0e2d\u0e2a\u0e34\u0e48\u0e07\u0e17\u0e35\u0e48 Apple \u0e15\u0e31\u0e49\u0e07\u0e40\u0e1b\u0e49\u0e32\u0e42\u0e08\u0e21\u0e15\u0e35\u0e42\u0e14\u0e22\u0e15\u0e23\u0e07\u0e14\u0e49\u0e27\u0e22 D2C strategy \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e0a\u0e34\u0e07\u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e43\u0e19\u0e44\u0e1f\u0e25\u0e4c\u0e43\u0e14\u0e46 \u0e41\u0e15\u0e48\u0e17\u0e34\u0e28\u0e17\u0e32\u0e07\u0e40\u0e0a\u0e34\u0e07\u0e01\u0e25\u0e22\u0e38\u0e17\u0e18\u0e4c\u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19\u0e41\u0e25\u0e30\u0e2a\u0e2d\u0e14\u0e04\u0e25\u0e49\u0e2d\u0e07\u0e01\u0e31\u0e1a pattern \u0e02\u0e2d\u0e07 Apple \u0e17\u0e31\u0e48\u0e27\u0e42\u0e25\u0e01</li></ol>",
+  "edge_html": "Consensus \u0e21\u0e2d\u0e07 ADVICE \u0e40\u0e1b\u0e47\u0e19 thin-margin IT distributor (GPM ~10%) \u0e41\u0e25\u0e30\u0e23\u0e32\u0e04\u0e32\u0e44\u0e27\u0e49\u0e17\u0e35\u0e48 11x P/E \u0e15\u0e25\u0e32\u0e14\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48 fully price in thesis \u0e27\u0e48\u0e32 GPM step-change \u0e2d\u0e32\u0e08\u0e40\u0e1b\u0e47\u0e19 structural \u0e21\u0e38\u0e21\u0e21\u0e2d\u0e07\u0e02\u0e2d\u0e07\u0e40\u0e23\u0e32\u0e04\u0e37\u0e2d: \u0e01\u0e32\u0e23\u0e25\u0e14\u0e02\u0e2d\u0e07 wholesale segment \u0e08\u0e32\u0e01 36% (FY2022) \u2192 28% (FY2025) \u0e02\u0e13\u0e30\u0e17\u0e35\u0e48 retail branches \u0e42\u0e15 +38% \u0e40\u0e1b\u0e47\u0e19 multi-year mechanism \u0e17\u0e35\u0e48 observable \u0e41\u0e25\u0e30\u0e19\u0e48\u0e32\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e16\u0e37\u0e2d \u0e16\u0e49\u0e32 mix shift (\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 vendor rebate) \u0e04\u0e37\u0e2d\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38\u0e2b\u0e25\u0e31\u0e01 \u2192 FY2026E NI ~500M \u2192 P/E \u0e08\u0e23\u0e34\u0e07 = 8.4x = discount \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e21\u0e35\u0e19\u0e31\u0e22\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e15\u0e48\u0e2d peer <strong>Edge expires:</strong> \u0e1c\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a\u0e01\u0e32\u0e23 Q3 2026 (\u0e04\u0e32\u0e14 \u0e1e.\u0e22. 2569) \u2014 GPM \u2265 12.0% \u0e40\u0e1b\u0e47\u0e19\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e17\u0e35\u0e48 3 \u0e15\u0e34\u0e14\u0e01\u0e31\u0e19 \u2192 structural thesis confirmed; GPM < 11.5% \u2192 thesis breaks ---",
+  "sector_lens": {
+    "classification": "Primary \u2014 \u0e04\u0e49\u0e32\u0e1b\u0e25\u0e35\u0e01\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32 IT (IT Retail); Secondary \u2014 IT Distributor/Wholesaler \u0e2a\u0e32\u0e02\u0e32 + \u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c\u0e23\u0e27\u0e21 66% \u0e02\u0e2d\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 FY2025 \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 retail \u0e40\u0e1b\u0e47\u0e19\u0e42\u0e21\u0e40\u0e14\u0e25\u0e2b\u0e25\u0e31\u0e01",
+    "tam": "\u0e15\u0e25\u0e32\u0e14 IT hardware + smartphone + accessories \u0e43\u0e19\u0e44\u0e17\u0e22\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 240\u2013310B THB (2568) <code>[est. \u2014 \u0e15\u0e49\u0e2d\u0e07 verify: ETDA Digital Economy Report; IDC Thailand ICT Spending Guide]</code> derivation: ~10\u201312M \u0e2b\u0e19\u0e48\u0e27\u0e22 smartphone \u00d7 ASP ~15,000 THB \u2192 150\u2013180B; ~3\u20134M \u0e2b\u0e19\u0e48\u0e27\u0e22 PC \u00d7 20,000 THB \u2192 60\u201380B; accessories/peripherals \u2192 30\u201350B CAGR \u0e15\u0e25\u0e32\u0e14: ~5\u20138%/\u0e1b\u0e35 <code><span class=\"badge est\">est.</span></code> ADVICE FY2025 revenue = ~5\u20137% \u0e02\u0e2d\u0e07 TAM <code>[est. \u2014 verify with screener]</code> \u0e2b\u0e23\u0e37\u0e2d 20\u201333% \u0e02\u0e2d\u0e07 modern trade channel <code><span class=\"badge est\">est.</span></code> \u2014 runway \u0e42\u0e15 3\u20134x \u0e01\u0e48\u0e2d\u0e19\u0e04\u0e23\u0e2d\u0e07 share \u0e23\u0e30\u0e14\u0e31\u0e1a COM7; constraint \u0e08\u0e23\u0e34\u0e07\u0e04\u0e37\u0e2d D2C compression \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 TAM exhaustion",
+    "priced_in": "\u0e17\u0e35\u0e48\u0e23\u0e32\u0e04\u0e32 6.80 THB P/E \u0e1a\u0e19 TTM NI 382M = 11.0x; \u0e1a\u0e19 normalized FY2025 NI 267M (GPM 10.4%) = 15.8x \u2014 \u0e2a\u0e2d\u0e14\u0e04\u0e25\u0e49\u0e2d\u0e07\u0e01\u0e31\u0e1a\u0e15\u0e25\u0e32\u0e14\u0e21\u0e2d\u0e07 ADVICE \u0e40\u0e1b\u0e47\u0e19 commodity distributor \u0e42\u0e15 ~10%/\u0e1b\u0e35 \u0e1a\u0e19 structural GPM 12.5% (FY2026E NI ~500M) P/E = 8.4x \u2014 \u0e15\u0e25\u0e32\u0e14\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e43\u0e2b\u0e49\u0e04\u0e27\u0e32\u0e21\u0e19\u0e48\u0e32\u0e08\u0e30\u0e40\u0e1b\u0e47\u0e19\u0e01\u0e31\u0e1a scenario \u0e19\u0e35\u0e49 \u0e14\u0e39 <code>--step valuation</code> \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a full reverse-DCF",
+    "narrative": "ADVICE \u0e04\u0e37\u0e2d provincial IT retail play \u0e1a\u0e19 2 cycle \u0e17\u0e35\u0e48\u0e0b\u0e49\u0e2d\u0e19\u0e01\u0e31\u0e19: AI smartphone/PC hardware supercycle (\u0e22\u0e32\u0e27 \u0e2b\u0e25\u0e32\u0e22\u0e1b\u0e35) \u0e41\u0e25\u0e30 structural mix shift \u0e08\u0e32\u0e01 wholesale margin \u0e1a\u0e32\u0e07\u0e44\u0e1b\u0e2a\u0e39\u0e48 retail/corporate margin \u0e2b\u0e19\u0e32 \u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e40\u0e25\u0e48\u0e32 bull: \u0e15\u0e25\u0e32\u0e14\u0e15\u0e48\u0e32\u0e07\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e22\u0e31\u0e07\u0e02\u0e32\u0e14\u0e1c\u0e39\u0e49\u0e40\u0e25\u0e48\u0e19 modern-format IT retail; \u0e04\u0e48\u0e32\u0e41\u0e23\u0e07\u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33 400 \u0e1a\u0e32\u0e17\u0e2b\u0e19\u0e38\u0e19 purchasing power; AI hardware cycle \u0e22\u0e32\u0e27\u0e01\u0e27\u0e48\u0e32 COVID cycle; ADVICE \u0e15\u0e31\u0e49\u0e07\u0e23\u0e31\u0e1a demand \u0e15\u0e48\u0e32\u0e07\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e14\u0e49\u0e27\u0e22 branch network \u0e40\u0e09\u0e1e\u0e32\u0e30\u0e15\u0e31\u0e27 \u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e40\u0e25\u0e48\u0e32 bear: Apple D2C \u0e04\u0e37\u0e2d structural headwind \u0e17\u0e35\u0e48\u0e40\u0e25\u0e47\u0e07\u0e17\u0e35\u0e48 transaction margin \u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e1e\u0e2d\u0e23\u0e4c\u0e15\u0e42\u0e14\u0e22\u0e15\u0e23\u0e07; \u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34 serial dilution 2565\u20132567 \u0e40\u0e1b\u0e47\u0e19 pattern \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 anomaly; GPM expansion \u0e17\u0e35\u0e48\u0e40\u0e1b\u0e47\u0e19\u0e17\u0e31\u0e49\u0e07 thesis \u2014 \u0e2d\u0e32\u0e08\u0e40\u0e1b\u0e47\u0e19\u0e41\u0e04\u0e48 vendor rebate \u0e17\u0e35\u0e48 revert \u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34",
+    "metrics": [
+      "GPM: 12.51% (vs. 10.41% Q2 2568, +210bps YoY) \u2014 \u0e2a\u0e39\u0e07\u0e01\u0e27\u0e48\u0e32\u0e04\u0e48\u0e32\u0e40\u0e09\u0e25\u0e35\u0e48\u0e22 4 \u0e1b\u0e35\u0e17\u0e35\u0e48 8.5\u201310.5% \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e21\u0e35\u0e19\u0e31\u0e22\u0e2a\u0e33\u0e04\u0e31\u0e0d",
+      "Inventory turns: 5.83\u00d7 (vs. 8.6\u00d7 Q3 2567, \u22122.8\u00d7 \u0e43\u0e19 6 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a) \u2014 deterioration \u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07",
+      "DIO: ~62\u201367 \u0e27\u0e31\u0e19 (inventory turnover method: 365/5.83 \u2248 63 \u0e27\u0e31\u0e19; direct DIO method: ~67 \u0e27\u0e31\u0e19) \u2014 \u0e2a\u0e39\u0e07\u0e01\u0e27\u0e48\u0e32 risk threshold 45\u201350 \u0e27\u0e31\u0e19",
+      "OCF: \u221268M (vs. +239M Q2 2568); inventory \u0e14\u0e39\u0e14\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14 \u2212492M \u0e43\u0e19 Q2 2026 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e40\u0e14\u0e35\u0e22\u0e27",
+      "SG&A/GP: 69.2% (vs. ~77.4% Q2 2568) \u2014 \u0e1b\u0e23\u0e31\u0e1a\u0e14\u0e35\u0e02\u0e36\u0e49\u0e19\u0e08\u0e32\u0e01 GPM \u0e02\u0e22\u0e32\u0e22 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 cost discipline"
+    ],
+    "questions": [
+      "<strong>\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38 GPM jump:</strong> \u0e2a\u0e31\u0e14\u0e2a\u0e48\u0e27\u0e19\u0e02\u0e2d\u0e07 (a) wholesale mix \u0e25\u0e14, (b) accessories attach, (c) corporate segment mix, (d) vendor rebate timing \u2014 \u0e15\u0e49\u0e2d\u0e07\u0e16\u0e32\u0e21 IR \u0e01\u0e48\u0e2d\u0e19\u0e15\u0e31\u0e14\u0e2a\u0e34\u0e19\u0e43\u0e08\u0e27\u0e32\u0e07 position \u0e43\u0e14\u0e46",
+      "<strong>Inventory aging:</strong> \u0e2a\u0e15\u0e4a\u0e2d\u0e01\u0e2d\u0e32\u0e22\u0e38 >90 \u0e27\u0e31\u0e19 \u0e01\u0e35\u0e48 % \u0e02\u0e2d\u0e07 2,967M? LCM provision \u0e40\u0e1b\u0e47\u0e19 % \u0e40\u0e17\u0e48\u0e32\u0e44\u0e23? (\u0e2d\u0e48\u0e32\u0e19 notes \u0e02\u0e49\u0e2d \"\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d\" \u0e43\u0e19\u0e07\u0e1a\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19)",
+      "<strong>SSSG vs. new store split:</strong> \u0e43\u0e19 +33% FY2025 branch revenue growth \u2014 \u0e01\u0e35\u0e48 % \u0e21\u0e32\u0e08\u0e32\u0e01 same-store vs. \u0e2a\u0e32\u0e02\u0e32\u0e43\u0e2b\u0e21\u0e48? (\u0e02\u0e38\u0e14\u0e08\u0e32\u0e01 Opp Day \u0e2b\u0e23\u0e37\u0e2d\u0e16\u0e32\u0e21 IR)",
+      "<strong>Corporate segment gross margin:</strong> GPM \u0e02\u0e2d\u0e07 corporate \u0e2a\u0e39\u0e07\u0e01\u0e27\u0e48\u0e32 consumer retail \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48? \u0e21\u0e35 recurring services component \u0e44\u0e2b\u0e21? (\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22\u0e43\u0e19\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23\u0e43\u0e14\u0e46 \u0e17\u0e35\u0e48\u0e21\u0e35)",
+      "<strong>Share count anomaly:</strong> \u0e2d\u0e30\u0e44\u0e23\u0e17\u0e33\u0e43\u0e2b\u0e49\u0e2b\u0e38\u0e49\u0e19\u0e25\u0e14\u0e25\u0e07 117M \u0e2b\u0e38\u0e49\u0e19 \u0e43\u0e19 1 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a (Q4 2567: 737M \u2192 Q1 2568: 620M)? \u0e21\u0e35 warrants \u0e2b\u0e23\u0e37\u0e2d ESOP \u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e04\u0e49\u0e32\u0e07\u0e2d\u0e22\u0e39\u0e48\u0e17\u0e35\u0e48\u0e2d\u0e32\u0e08 resume dilution \u0e44\u0e2b\u0e21?"
+    ]
+  },
+  "kill_price": {
+    "conviction": "Medium",
+    "kill_price": "THB 5.50 \u2014 triggered if Q3 2026 gross margin \u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 11.5% (\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 H1 2026 \u0e40\u0e1b\u0e47\u0e19 vendor-rebate timing), OR \u0e21\u0e35 inventory write-down charge \u0e40\u0e01\u0e34\u0e19 200M \u0e43\u0e19\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e40\u0e14\u0e35\u0e22\u0e27, OR \u0e21\u0e35\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e2d\u0e2d\u0e01\u0e2b\u0e38\u0e49\u0e19\u0e43\u0e2b\u0e21\u0e48",
+    "kill_trigger": "\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e01\u0e33\u0e44\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e49\u0e19 (Gross Margin) \u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 11.5% \u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07 2 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a (Q3 \u0e41\u0e25\u0e30 Q4 2026) \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e27\u0e48\u0e32 GPM step-change \u0e21\u0e32\u0e08\u0e32\u0e01 vendor rebate timing \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 structural mix shift \u2014 \u0e13 \u0e08\u0e38\u0e14\u0e19\u0e31\u0e49\u0e19 FY2026E NI revert \u0e01\u0e25\u0e31\u0e1a ~230M \u0e41\u0e25\u0e30\u0e2b\u0e38\u0e49\u0e19\u0e17\u0e35\u0e48\u0e23\u0e32\u0e04\u0e32 6.80 THB \u0e41\u0e1e\u0e07\u0e17\u0e35\u0e48 18.3x \u0e1a\u0e19 reversion earnings",
+    "rationale": ""
+  },
+  "munger_verdict": ""
+};
+
+// ─── THEME-AWARE CHART COLORS ────────────────────────────────────────────────
+const cs = getComputedStyle(document.documentElement);
+const tok = name => cs.getPropertyValue(name).trim();
+const COLORS = {
+  ink: tok('--ink'), muted: tok('--muted'), line: tok('--line'),
+  accent: tok('--accent'), accent2: tok('--accent2'), good: tok('--good'), danger: tok('--danger'),
+};
+
+const cd = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: COLORS.muted, font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: COLORS.muted, font: { size: 11 } }, grid: { color: COLORS.line } },
+    y: { ticks: { color: COLORS.muted, font: { size: 11 } }, grid: { color: COLORS.line } }
+  }
+};
+
+const annual   = [...REPORT_DATA.annual_rows].reverse();
+const quarters = [...REPORT_DATA.quarters].reverse();
+
+new Chart(document.getElementById('annualRevenueChart'), {
+  type: 'bar',
+  data: { labels: annual.map(a => a.label),
+    datasets: [{ label: 'Revenue ($B)', data: annual.map(a => a.revenue_b), backgroundColor: COLORS.accent2, borderRadius: 4 }] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('annualMarginChart'), {
+  type: 'line',
+  data: { labels: annual.map(a => a.label),
+    datasets: [
+      { label: 'Gross', data: annual.map(a => a.gross_margin_pct), borderColor: COLORS.good, tension: 0.3, fill: false },
+      { label: 'Op.',   data: annual.map(a => a.op_margin_pct),    borderColor: COLORS.accent2, tension: 0.3, fill: false },
+      { label: 'Net',   data: annual.map(a => a.net_margin_pct),   borderColor: COLORS.accent, tension: 0.3, fill: false },
+    ] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('quarterlyRevenueChart'), {
+  type: 'bar',
+  data: { labels: quarters.map(q => q.label),
+    datasets: [{ label: 'Revenue ($B)', data: quarters.map(q => q.revenue_b),
+      backgroundColor: quarters.map((_, i, a) => i === a.length - 1 ? COLORS.accent : COLORS.accent2), borderRadius: 4 }] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: { labels: quarters.map(q => q.label),
+    datasets: [
+      { label: 'YoY %', data: quarters.map(q => q.yoy_growth), borderColor: COLORS.good, tension: 0.3, fill: false },
+      { label: 'QoQ %', data: quarters.map(q => q.qoq_growth || 0), borderColor: COLORS.accent, tension: 0.3, fill: false, borderDash: [4,4] },
+    ] },
+  options: { ...cd }
+});
+
+// ─── EXECUTIVE SUMMARY ────────────────────────────────────────────────────────
+document.getElementById('exec').innerHTML = REPORT_DATA.exec_summary_html || '';
+
+// ─── ANNUAL / QUARTERLY TABLES ─────────────────────────────────────────────────
+const atbody = document.getElementById('annualTable');
+REPORT_DATA.annual_rows.forEach(a => {
+  const yoy = a.yoy_growth > 0 ? `<span class="up">+${a.yoy_growth}%</span>` : a.yoy_growth < 0 ? `<span class="down">${a.yoy_growth}%</span>` : '—';
+  atbody.innerHTML += `<tr><td><b>${a.label}</b></td><td>$${a.revenue_b}B</td><td>${yoy}</td><td>${a.gross_margin_pct}%</td><td>${a.op_margin_pct}%</td><td>$${a.net_income_b}B</td><td>${a.fcf_b ? '$'+a.fcf_b+'B' : '—'}</td><td>${a.eps != null ? '$'+a.eps : 'N/A'}</td></tr>`;
+});
+
+const qtbody = document.getElementById('quarterlyTable');
+REPORT_DATA.quarters.forEach(q => {
+  const yoy = q.yoy_growth > 0 ? `<span class="up">+${q.yoy_growth}%</span>` : q.yoy_growth < 0 ? `<span class="down">${q.yoy_growth}%</span>` : '—';
+  const qoq = q.qoq_growth > 0 ? `<span class="up">+${q.qoq_growth}%</span>` : q.qoq_growth < 0 ? `<span class="down">${q.qoq_growth}%</span>` : '—';
+  qtbody.innerHTML += `<tr><td><b>${q.label}</b></td><td>$${q.revenue_b}B</td><td>${yoy}</td><td>${qoq}</td><td>${q.gross_margin_pct}%</td><td>${q.op_margin_pct}%</td><td>${q.net_income_b ? '$'+q.net_income_b+'B' : '—'}</td><td>${q.fcf_b ? '$'+q.fcf_b+'B' : '—'}</td><td>${q.eps}</td></tr>`;
+});
+
+// ─── GUIDANCE TABLE ───────────────────────────────────────────────────────────
+const gtbody = document.getElementById('guidanceTable');
+REPORT_DATA.guidance.forEach(g => {
+  const r = (g.result || '').toLowerCase();
+  const cls = r.includes('beat') ? 'beat' : r.includes('miss') ? 'miss' : (r.includes('inline') || r.includes('in-line')) ? 'inline-r' : 'neutral';
+  gtbody.innerHTML += `<tr><td>${g.period}</td><td>${g.metric}</td><td>${g.guidance}</td><td>${g.actual}</td><td><span class="${cls}">${g.result || '—'}</span></td></tr>`;
+});
+
+// ─── GROWTH DRIVERS / KEY RISKS (shared <ol><li> HTML from the parser) ────────
+document.getElementById('growthList').innerHTML = (REPORT_DATA.growth_html || '').replace(/^<ol>|<\/ol>$/g, '');
+document.getElementById('riskList').innerHTML = (REPORT_DATA.risks_html || '').replace(/^<ol>|<\/ol>$/g, '');
+
+// ─── BULL / BEAR + EDGE ─────────────────────────────────────────────────────────
+const bullList = document.getElementById('bullList');
+REPORT_DATA.bull_case.forEach(b => { bullList.innerHTML += `<li>${b}</li>`; });
+const bearList = document.getElementById('bearList');
+REPORT_DATA.bear_case.forEach(b => { bearList.innerHTML += `<li>${b}</li>`; });
+if (REPORT_DATA.edge_html) {
+  document.getElementById('edgeCallout').hidden = false;
+  document.getElementById('edgeText').innerHTML = REPORT_DATA.edge_html;
+}
+
+// ─── SECTOR LENS ───────────────────────────────────────────────────────────────
+const lens = REPORT_DATA.sector_lens || {};
+if (lens.classification || lens.tam || lens.narrative) {
+  document.getElementById('lens').hidden = false;
+  document.getElementById('lensClassification').innerHTML = lens.classification || '—';
+  document.getElementById('lensTam').innerHTML = lens.tam || '—';
+  document.getElementById('lensPricedIn').innerHTML = lens.priced_in || '—';
+  document.getElementById('lensNarrative').innerHTML = lens.narrative || '—';
+  const lm = document.getElementById('lensMetrics');
+  (lens.metrics || []).forEach(m => { lm.innerHTML += `<li>${m}</li>`; });
+  const lq = document.getElementById('lensQuestions');
+  (lens.questions || []).forEach(q => { lq.innerHTML += `<li>${q}</li>`; });
+}
+
+// ─── KEY METRICS ──────────────────────────────────────────────────────────────
+const metricsWrap = document.getElementById('metricsWatch');
+REPORT_DATA.key_metrics.forEach(m => {
+  metricsWrap.innerHTML += `<div class="metric-row"><span class="metric-name">${m.name}</span><span class="metric-threshold">${m.threshold}</span></div>`;
+});
+
+// ─── KILL PRICE & CONVICTION ────────────────────────────────────────────────────
+const kp = REPORT_DATA.kill_price || {};
+if (kp.conviction || kp.kill_price) {
+  document.getElementById('killbar').hidden = false;
+  document.getElementById('killConviction').innerHTML = kp.conviction || '—';
+  document.getElementById('killPrice').innerHTML = kp.kill_price || '—';
+  document.getElementById('killTrigger').innerHTML = kp.kill_trigger || '—';
+  document.getElementById('killRationale').innerHTML = kp.rationale || '';
+}
+if (kp.conviction) {
+  // strip HTML tags for the compact stat-tile value (e.g. "<strong>Medium</strong>" -> "Medium")
+  const plainConviction = kp.conviction.replace(/<[^>]+>/g, '').trim();
+  const verdict = REPORT_DATA.munger_verdict || '—';
+  const subEl = document.getElementById('convictionSub');
+  document.getElementById('convictionKpi').hidden = false;
+  document.getElementById('convictionValue').textContent = plainConviction;
+  subEl.textContent = 'Munger: ' + verdict;
+  subEl.className = 'kpi-change ' + (verdict.toUpperCase() === 'BUY' ? 'up' : verdict ? 'down' : 'neutral');
+}
+
+// ─── TOC SCROLL-SPY ───────────────────────────────────────────────────────────
+const tocLinks = Array.from(document.querySelectorAll('#tocNav a'));
+const targets = tocLinks.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+if ('IntersectionObserver' in window && targets.length) {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  targets.forEach(t => obs.observe(t));
+}
+</script>
+</body>
+</html>
