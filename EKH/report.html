@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EKH Research Report — Stock Research OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Taviraj:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --paper:#f3efe4; --ink:#221d16; --muted:#6f6350; --card:#fffdf7; --line:#ddd2b8;
+      --accent:#d9720d; --accent-ink:#ffffff; --accent2:#0e7a6f; --accent2-bg:#dcf0ec;
+      --danger:#c53a2c; --danger-bg:#fbe2de; --good:#1f8a4c; --good-bg:#dcf1e2; --warn-bg:#fbecc9;
+      --shadow: 0 10px 28px rgba(34,29,22,.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper:#161310; --ink:#f2ead9; --muted:#c2b294; --card:#211c15; --line:#3c3323;
+        --accent:#ffab4d; --accent-ink:#1a1208; --accent2:#4fd8c8; --accent2-bg:#123330;
+        --danger:#ff8a75; --danger-bg:#3a1c16; --good:#5fe093; --good-bg:#153322; --warn-bg:#3d2e10;
+        --shadow: 0 10px 30px rgba(0,0,0,.45);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--paper); color: var(--ink); font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', -apple-system, sans-serif; font-size: 14px; line-height: 1.7; padding: 0 16px; }
+    h1, h2, h3 { font-family: 'Taviraj', 'Noto Serif Thai', serif; text-wrap: balance; letter-spacing: -.01em; }
+    a { color: var(--accent2); }
+    code { font-family: 'IBM Plex Mono', monospace; background: var(--accent2-bg); color: var(--accent2); padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+    .num, .tabular { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    .badge { display:inline-block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:5px; margin:0 2px; }
+    .badge.est { background: var(--warn-bg); color: var(--accent); }
+    .badge.unverified { background: var(--danger-bg); color: var(--danger); }
+
+    /* Shell: sticky TOC + main content */
+    .shell { max-width: 1200px; margin: 0 auto; padding-block: 28px 60px; display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 26px; align-items: start; }
+    .toc { position: sticky; top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
+    .toc strong { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 10px; }
+    .toc a { display: block; color: var(--muted); text-decoration: none; font-size: .86rem; padding: 6px 9px; border-radius: 8px; margin-bottom: 2px; }
+    .toc a:hover { background: var(--accent2-bg); color: var(--accent2); }
+    .toc a.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+    main { min-width: 0; }
+
+    /* Header */
+    .header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 22px; }
+    .eyebrow { font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+    .ticker-badge { font-size: 42px; font-weight: 700; line-height: 1; }
+    .company-name { font-size: 16px; color: var(--muted); margin-top: 4px; }
+    .meta-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .pill { border:1px solid var(--line); background:var(--card); padding:5px 11px; border-radius:999px; font-size:.82rem; color:var(--muted); }
+    .pill b { color: var(--ink); }
+    .pill.flag { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); font-weight: 600; }
+
+    /* Exec summary */
+    .exec-summary { max-width: 74ch; margin-bottom: 26px; font-size: 1rem; }
+    .exec-summary p { margin: 0 0 1em; }
+    .exec-summary p:last-child { margin-bottom: 0; }
+
+    /* Cards */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); }
+    .card-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; font-weight: 600; font-family: 'IBM Plex Sans Thai', sans-serif; }
+
+    /* KPI boxes */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; box-shadow: var(--shadow); }
+    .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi-value { font-size: 22px; font-weight: 700; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+    .kpi-change { font-size: 12px; margin-top: 2px; }
+    .up { color: var(--good); }
+    .down { color: var(--danger); }
+    .neutral { color: var(--muted); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--line); font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    td:first-child { font-family: 'IBM Plex Sans Thai', sans-serif; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--accent2-bg); }
+    .beat { color: var(--good); font-weight: 600; }
+    .miss { color: var(--danger); font-weight: 600; }
+    .inline-r { color: var(--accent); font-weight: 600; }
+
+    /* Section headers */
+    .section { margin-bottom: 24px; scroll-margin-top: 16px; }
+    .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-family: 'Taviraj', serif; }
+
+    /* Growth drivers — numbered card list */
+    ol.numbered { padding-left: 0; list-style: none; counter-reset: n; }
+    ol.numbered li { counter-increment: n; position: relative; padding: 10px 14px 10px 40px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; }
+    ol.numbered li::before { content: counter(n); position: absolute; left: 12px; top: 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--accent2); }
+    .growth-list li { border-left: 4px solid var(--accent2); }
+
+    /* Key risks — tinted callouts (full background, not just a border) so
+    severity reads at a glance rather than blending into a plain card list */
+    ol.risk-list { padding-left: 0; list-style: none; counter-reset: n; }
+    .risk-list li { counter-increment: n; position: relative; padding: 12px 16px 12px 44px; margin-bottom: 8px; background: var(--danger-bg); border-radius: 10px; font-size: 13.5px; }
+    .risk-list li::before { content: counter(n); position: absolute; left: 14px; top: 12px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--danger); }
+
+    /* Bull / Bear */
+    .bull-bear { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bull-card, .bear-card { border-radius: 12px; padding: 16px; }
+    .bull-card { background: var(--good-bg); }
+    .bear-card { background: var(--danger-bg); }
+    .bull-card .card-title { color: var(--good); }
+    .bear-card .card-title { color: var(--danger); }
+    ul.case-list { padding-left: 0; list-style: none; }
+    ul.case-list li { margin-bottom: 8px; font-size: 13px; }
+    .edge-callout { margin-top: 12px; background: var(--warn-bg); border-radius: 10px; padding: 14px 16px; font-size: 13.5px; }
+    .edge-callout .edge-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin-bottom: 5px; }
+
+    /* Sector lens */
+    .lens-field { margin-bottom: 14px; font-size: 13.5px; }
+    .lens-field .lens-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent2); font-weight: 700; margin-bottom: 4px; }
+    .lens-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+    .lens-cols h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+    ul.tight { padding-left: 1.1em; margin: 0; }
+    ul.tight li { margin: 6px 0; font-size: 13px; }
+
+    /* Metrics watchlist */
+    .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); gap: 12px; }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-name { font-weight: 500; }
+    .metric-threshold { font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--accent2-bg); color: var(--accent2); padding: 2px 8px; border-radius: 4px; }
+
+    /* Kill price banner */
+    .killbar { background: linear-gradient(135deg, var(--ink), color-mix(in srgb, var(--ink) 78%, var(--accent))); color: var(--paper); border-radius: 16px; padding: 24px 26px; margin-bottom: 24px; scroll-margin-top: 16px; }
+    .killbar h2 { color: var(--paper); margin: 0 0 14px; font-size: 20px; }
+    .killbar .field { margin: 0 0 9px; font-size: .95rem; }
+    .killbar .field b { color: var(--accent); }
+    .killbar .rationale { margin-top: 12px; font-size: .86rem; opacity: .85; }
+
+    /* Chart container */
+    .chart-wrap { height: 220px; position: relative; }
+
+    /* Footer */
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .toc nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    }
+    @media (max-width: 600px) {
+      .grid-2, .grid-3, .bull-bear, .lens-cols { grid-template-columns: 1fr; }
+      .ticker-badge { font-size: 32px; }
+      .toc nav { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sticky table of contents -->
+  <aside class="toc" aria-label="สารบัญ">
+    <strong>สารบัญ</strong>
+    <nav id="tocNav">
+      <a href="#exec">บทสรุป</a>
+      <a href="#financials">ผลประกอบการ</a>
+      <a href="#guidance">Guidance</a>
+      <a href="#growth">Growth Drivers</a>
+      <a href="#risks">ความเสี่ยง</a>
+      <a href="#bullbear">Bull/Bear</a>
+      <a href="#lens">Sector Lens</a>
+      <a href="#watch">Metrics</a>
+      <a href="#kill">Kill Price</a>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- Header -->
+    <div class="header">
+      <div class="eyebrow">Stock Research OS · 2026-09-23</div>
+      <div class="ticker-badge">EKH</div>
+      <div class="company-name">Ekachai Medical Care Public Company Limited</div>
+      <div class="meta-row">
+        <span class="pill">Sector <b>Healthcare</b></span>
+        <span class="pill">Industry <b>Medical Care Facilities</b></span>
+        <span class="pill">Market Cap <b>N/A</b></span>
+        <span class="pill" style="color:var(--danger);font-weight:700;background:var(--danger-bg);padding:2px 10px;border-radius:12px;">Lynch: Turnaround</span>
+      </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="exec-summary section" id="exec"></div>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Revenue (TTM)</div>
+        <div class="kpi-value">$1.3B</div>
+        <div class="kpi-change up">19.2% YoY</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Gross Margin</div>
+        <div class="kpi-value">42.2%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Operating Margin</div>
+        <div class="kpi-value">23.5%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Free Cash Flow</div>
+        <div class="kpi-value">$-0.4B</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">P/E (TTM)</div>
+        <div class="kpi-value">15.1x</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Forward P/E</div>
+        <div class="kpi-value">16.2x</div>
+      </div>
+      <div class="kpi" id="convictionKpi" hidden>
+        <div class="kpi-label">Conviction</div>
+        <div class="kpi-value" id="convictionValue"></div>
+        <div class="kpi-change down" id="convictionSub"></div>
+      </div>
+    </div>
+
+    <!-- Lynch Card -->
+      <div class="card section" style="border-left:3px solid var(--danger);">
+    <div class="card-title" style="display:flex;align-items:center;gap:10px;">
+      Peter Lynch Classification
+      <span style="color:var(--danger);font-weight:700;background:var(--danger-bg);padding:2px 10px;border-radius:12px;">Turnaround ↩️</span>
+    </div>
+    <p style="margin:0 0 10px;color:var(--muted);line-height:1.6;">EKH แสดงลักษณะ Turnaround ชัดเจนใน 3 มิติพร้อมกัน — revenue หดลง FY2025 (−5.1%) จากระดับ peak FY2024 พร้อม gross margin compression 440 bps; FCF พลิกเป็นลบ FY2025 (−฿73.7M) เนื่องจาก heavy CapEx cycle ฿390M; และบริษัทลูกที่ขาดทุนเร่งตัว (minority interest −฿0.98M → −฿9.66M ใน 4 ไตรมาส) บ่งชี้ว่ายังอยู่ในวงจร investment/rebuild ก่อนฟื้นตัว อย่างไรก็ตาม Q4 2025 (+9.1% YoY revenue) และ Q2 2026 (+19.2% YoY) เริ่มส่งสัญญาณฟื้น
+
+**(3)</p>
+    <p style="margin:0;color:var(--muted);line-height:1.6;"><strong style="color:var(--danger);">Implication:</strong> Turnaround stocks ต้องการ "proof of recovery" ก่อน commit ขนาดใหญ่ — ตัวชี้วัดสำคัญคือ (A) วันเปิด commercial operations ของโครงการ ฿867M, (B) Gross Margin กลับ >43% ใน Q3/Q4 2026, (C) minority interest losses หยุดเร่ง; ก่อนได้รับยืนยัน PE 15.15x TTM เป็น "fair at best" ไม่ใช่ bargain; ถ้า proof มา → upside จาก re-rating ไป Stalwart/Fast Grower มีความเป็นไปได้
+
+---</p>
+  </div>
+
+    <!-- Financials anchor -->
+    <div id="financials"></div>
+
+    <!-- Charts Row 1: Annual -->
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-title">Annual Revenue — 5 Years ($B)</div>
+        <div class="chart-wrap"><canvas id="annualRevenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Annual Margins — 5 Years</div>
+        <div class="chart-wrap"><canvas id="annualMarginChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2: Quarterly -->
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-title">Quarterly Revenue — 8 Quarters ($B)</div>
+        <div class="chart-wrap"><canvas id="quarterlyRevenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Quarterly YoY & QoQ Growth %</div>
+        <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Annual Table -->
+    <div class="section">
+      <div class="section-title">Annual Performance — 5 Years</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fiscal Year</th><th>Revenue</th><th>YoY</th>
+              <th>Gross Margin</th><th>Op. Margin</th>
+              <th>Net Income</th><th>FCF</th><th>EPS</th>
+            </tr>
+          </thead>
+          <tbody id="annualTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quarterly Table -->
+    <div class="section">
+      <div class="section-title">Quarterly Performance — 8 Quarters</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quarter</th><th>Revenue</th><th>YoY</th><th>QoQ</th>
+              <th>Gross Margin</th><th>Op. Margin</th>
+              <th>Net Income</th><th>FCF</th><th>EPS</th>
+            </tr>
+          </thead>
+          <tbody id="quarterlyTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Guidance Tracker -->
+    <div class="section" id="guidance">
+      <div class="section-title">Guidance Tracker</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Metric</th>
+              <th>Guidance</th>
+              <th>Actual</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="guidanceTable">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Growth Drivers -->
+    <div class="section" id="growth">
+      <div class="section-title">Key Growth Drivers</div>
+      <ol class="numbered growth-list" id="growthList"></ol>
+    </div>
+
+    <!-- Key Risks -->
+    <div class="section" id="risks">
+      <div class="section-title">Key Risks</div>
+      <ol class="numbered risk-list" id="riskList"></ol>
+    </div>
+
+    <!-- Bull / Bear -->
+    <div class="section" id="bullbear">
+      <div class="section-title">Bull vs Bear Case</div>
+      <div class="bull-bear">
+        <div class="bull-card">
+          <div class="card-title">Bull Case</div>
+          <ul class="case-list" id="bullList"></ul>
+        </div>
+        <div class="bear-card">
+          <div class="card-title">Bear Case</div>
+          <ul class="case-list" id="bearList"></ul>
+        </div>
+      </div>
+      <div class="edge-callout" id="edgeCallout" hidden>
+        <span class="edge-label">Edge / Non-Consensus View</span>
+        <span id="edgeText"></span>
+      </div>
+    </div>
+
+    <!-- Sector Lens -->
+    <div class="section" id="lens" hidden>
+      <div class="section-title">Sector Lens</div>
+      <div class="card">
+        <div class="lens-field"><span class="lens-label">Sector classification</span><span id="lensClassification"></span></div>
+        <div class="lens-field"><span class="lens-label">TAM &amp; runway</span><span id="lensTam"></span></div>
+        <div class="lens-field"><span class="lens-label">What the current price prices in</span><span id="lensPricedIn"></span></div>
+        <div class="lens-field"><span class="lens-label">Narrative</span><span id="lensNarrative"></span></div>
+        <div class="lens-cols">
+          <div>
+            <h4>Sector metrics this quarter</h4>
+            <ul class="tight" id="lensMetrics"></ul>
+          </div>
+          <div>
+            <h4>Still-open sector questions</h4>
+            <ul class="tight" id="lensQuestions"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Metrics to Watch -->
+    <div class="section" id="watch">
+      <div class="section-title">Key Metrics to Watch (Next Earnings)</div>
+      <div class="card" id="metricsWatch"></div>
+    </div>
+
+    <!-- Kill Price & Conviction -->
+    <div class="killbar" id="killbar" hidden>
+      <h2 id="kill">Kill Price &amp; Conviction</h2>
+      <p class="field"><b>Conviction:</b> <span id="killConviction"></span></p>
+      <p class="field"><b>Kill Price:</b> <span id="killPrice"></span></p>
+      <p class="field"><b>Kill Trigger (non-price):</b> <span id="killTrigger"></span></p>
+      <p class="rationale" id="killRationale"></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Stock Research OS — Generated 2026-09-23</span>
+      <span>Data: SEC EDGAR / SET + yfinance | Agents: Claude + MiniMax M2.7</span>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── DATA (filled by generate_html.py) ──────────────────────────────────────
+const REPORT_DATA = {
+  "ticker": "EKH",
+  "company_name": "Ekachai Medical Care Public Company Limited",
+  "sector": "Healthcare",
+  "industry": "Medical Care Facilities",
+  "market_cap": "N/A",
+  "report_date": "2026-09-23",
+  "revenue_ttm": "$1.3B",
+  "revenue_growth": "19.2%",
+  "gross_margin": "42.2%",
+  "op_margin": "23.5%",
+  "fcf_ttm": "$-0.4B",
+  "pe_ratio": 15.1,
+  "fwd_pe": 16.2,
+  "annual_rows": [],
+  "quarters": [],
+  "guidance": [
+    {
+      "period": "Recent Q (entry [0])",
+      "metric": "EPS",
+      "guidance": "\u0e3f0.08",
+      "actual": "\u0e3f0.1016",
+      "result": "**+27.0%**"
+    },
+    {
+      "period": "Recent Q (entry [1])",
+      "metric": "EPS",
+      "guidance": "\u0e3f0.06",
+      "actual": "\u0e3f0.0703",
+      "result": "**+17.2%**"
+    },
+    {
+      "period": "Recent Q (entry [2])",
+      "metric": "EPS",
+      "guidance": "\u0e3f0.06",
+      "actual": "\u0e3f0.0752",
+      "result": "**+25.3%**"
+    },
+    {
+      "period": "Q2 2026",
+      "metric": "Revenue",
+      "guidance": "\u2014",
+      "actual": "\u0e3f329.44M (actual)",
+      "result": "\u2014"
+    },
+    {
+      "period": "Q2 2026",
+      "metric": "EPS",
+      "guidance": "\u2014",
+      "actual": "TBD",
+      "result": "\u2014"
+    }
+  ],
+  "bull_case": [
+    "<strong>Scenario:</strong> CapEx \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e2b\u0e49\u0e2d\u0e07 IVF + \u0e2b\u0e49\u0e2d\u0e07\u0e1c\u0e48\u0e32\u0e15\u0e31\u0e14 GRS; \u0e40\u0e1b\u0e34\u0e14 Q4 2026; GM \u0e1f\u0e37\u0e49\u0e19 44\u201347%; \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e25\u0e39\u0e01 breakeven FY2027",
+    "<strong>Key assumption:</strong> Capex service-line = high-margin specialty; SSO <25% \u0e02\u0e2d\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49",
+    "<strong>Price implication:</strong> Re-rate \u0e2a\u0e39\u0e48 specialty multiple (18\u201322\u00d7) \u2192 \u0e3f4.80\u20136.60/\u0e2b\u0e38\u0e49\u0e19",
+    "<strong>Probability (est.):</strong> 35%"
+  ],
+  "bear_case": [
+    "<strong>Scenario:</strong> CapEx \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e40\u0e15\u0e35\u0e22\u0e07 general ward + dialysis + \u0e1c\u0e39\u0e49\u0e2a\u0e39\u0e07\u0e2d\u0e32\u0e22\u0e38; GM \u0e2d\u0e22\u0e39\u0e48 40\u201342%; D&A cliff \u0e14\u0e31\u0e19 NI \u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 \u0e3f200M FY2026",
+    "<strong>Key assumption:</strong> Capex service-line = community-grade; SSO \u226530%; D&A cliff \u0e40\u0e15\u0e47\u0e21\u0e17\u0e35\u0e48 FY2026",
+    "<strong>Price implication:</strong> Re-rate \u0e40\u0e1b\u0e47\u0e19 community multiple (11\u201313\u00d7 \u0e1a\u0e19 trough NI \u0e3f185\u2013200M) \u2192 \u0e3f2.42\u20132.99/\u0e2b\u0e38\u0e49\u0e19",
+    "<strong>Probability (est.):</strong> 45% (20% middle path: \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 specialty \u0e41\u0e15\u0e48 margin \u0e2d\u0e22\u0e39\u0e48\u0e41\u0e04\u0e48 42\u201343%)"
+  ],
+  "key_metrics": [],
+  "lynch": {
+    "category": "Turnaround",
+    "why": "EKH \u0e41\u0e2a\u0e14\u0e07\u0e25\u0e31\u0e01\u0e29\u0e13\u0e30 Turnaround \u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19\u0e43\u0e19 3 \u0e21\u0e34\u0e15\u0e34\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19 \u2014 revenue \u0e2b\u0e14\u0e25\u0e07 FY2025 (\u22125.1%) \u0e08\u0e32\u0e01\u0e23\u0e30\u0e14\u0e31\u0e1a peak FY2024 \u0e1e\u0e23\u0e49\u0e2d\u0e21 gross margin compression 440 bps; FCF \u0e1e\u0e25\u0e34\u0e01\u0e40\u0e1b\u0e47\u0e19\u0e25\u0e1a FY2025 (\u2212\u0e3f73.7M) \u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e32\u0e01 heavy CapEx cycle \u0e3f390M; \u0e41\u0e25\u0e30\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e25\u0e39\u0e01\u0e17\u0e35\u0e48\u0e02\u0e32\u0e14\u0e17\u0e38\u0e19\u0e40\u0e23\u0e48\u0e07\u0e15\u0e31\u0e27 (minority interest \u2212\u0e3f0.98M \u2192 \u2212\u0e3f9.66M \u0e43\u0e19 4 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a) \u0e1a\u0e48\u0e07\u0e0a\u0e35\u0e49\u0e27\u0e48\u0e32\u0e22\u0e31\u0e07\u0e2d\u0e22\u0e39\u0e48\u0e43\u0e19\u0e27\u0e07\u0e08\u0e23 investment/rebuild \u0e01\u0e48\u0e2d\u0e19\u0e1f\u0e37\u0e49\u0e19\u0e15\u0e31\u0e27 \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e44\u0e23\u0e01\u0e47\u0e15\u0e32\u0e21 Q4 2025 (+9.1% YoY revenue) \u0e41\u0e25\u0e30 Q2 2026 (+19.2% YoY) \u0e40\u0e23\u0e34\u0e48\u0e21\u0e2a\u0e48\u0e07\u0e2a\u0e31\u0e0d\u0e0d\u0e32\u0e13\u0e1f\u0e37\u0e49\u0e19\n\n**(3)",
+    "implication": "Turnaround stocks \u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23 \"proof of recovery\" \u0e01\u0e48\u0e2d\u0e19 commit \u0e02\u0e19\u0e32\u0e14\u0e43\u0e2b\u0e0d\u0e48 \u2014 \u0e15\u0e31\u0e27\u0e0a\u0e35\u0e49\u0e27\u0e31\u0e14\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e04\u0e37\u0e2d (A) \u0e27\u0e31\u0e19\u0e40\u0e1b\u0e34\u0e14 commercial operations \u0e02\u0e2d\u0e07\u0e42\u0e04\u0e23\u0e07\u0e01\u0e32\u0e23 \u0e3f867M, (B) Gross Margin \u0e01\u0e25\u0e31\u0e1a >43% \u0e43\u0e19 Q3/Q4 2026, (C) minority interest losses \u0e2b\u0e22\u0e38\u0e14\u0e40\u0e23\u0e48\u0e07; \u0e01\u0e48\u0e2d\u0e19\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 PE 15.15x TTM \u0e40\u0e1b\u0e47\u0e19 \"fair at best\" \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 bargain; \u0e16\u0e49\u0e32 proof \u0e21\u0e32 \u2192 upside \u0e08\u0e32\u0e01 re-rating \u0e44\u0e1b Stalwart/Fast Grower \u0e21\u0e35\u0e04\u0e27\u0e32\u0e21\u0e40\u0e1b\u0e47\u0e19\u0e44\u0e1b\u0e44\u0e14\u0e49\n\n---"
+  },
+  "exec_summary_html": "<p>)</p><p>Ekachai Medical Care (EKH) \u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e40\u0e2d\u0e01\u0e0a\u0e19\u0e41\u0e2b\u0e48\u0e07\u0e40\u0e14\u0e35\u0e22\u0e27\u0e43\u0e19\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14\u0e2a\u0e21\u0e38\u0e17\u0e23\u0e2a\u0e32\u0e04\u0e23 \u2014 \u0e40\u0e1b\u0e47\u0e19\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e40\u0e2d\u0e01\u0e0a\u0e19\u0e2b\u0e25\u0e31\u0e01\u0e17\u0e35\u0e48\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e0a\u0e32\u0e01\u0e23\u0e23\u0e32\u0e27 600,000 \u0e04\u0e19\u0e41\u0e25\u0e30\u0e41\u0e23\u0e07\u0e07\u0e32\u0e19\u0e02\u0e49\u0e32\u0e21\u0e0a\u0e32\u0e15\u0e34\u0e08\u0e33\u0e19\u0e27\u0e19\u0e21\u0e32\u0e01 \u0e2b\u0e48\u0e32\u0e07\u0e08\u0e32\u0e01\u0e01\u0e23\u0e38\u0e07\u0e40\u0e17\u0e1e\u0e2f \u0e1d\u0e31\u0e48\u0e07\u0e15\u0e30\u0e27\u0e31\u0e19\u0e15\u0e01\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 35 \u0e01\u0e21. \u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e17\u0e32\u0e07\u0e2b\u0e25\u0e31\u0e01 \u0e44\u0e14\u0e49\u0e41\u0e01\u0e48 IVF/fertility, gender reassignment surgery (GRS) \u0e41\u0e25\u0e30\u0e28\u0e31\u0e25\u0e22\u0e01\u0e23\u0e23\u0e21\u0e04\u0e27\u0e32\u0e21\u0e07\u0e32\u0e21 \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e01\u0e33\u0e44\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e49\u0e19 (Gross Margin) \u0e2a\u0e39\u0e07\u0e01\u0e27\u0e48\u0e32\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e0a\u0e38\u0e21\u0e0a\u0e19\u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b \u0e02\u0e13\u0e30\u0e17\u0e35\u0e48\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 OPD/IPD \u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b\u0e41\u0e25\u0e30\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22 SSO \u0e40\u0e1b\u0e47\u0e19\u0e10\u0e32\u0e19 volume</p><p>\u0e1c\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a\u0e01\u0e32\u0e23 (Earnings) \u0e16\u0e14\u0e16\u0e2d\u0e22\u0e08\u0e32\u0e01\u0e08\u0e38\u0e14\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 FY2024: \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 (Revenue) \u0e2b\u0e14\u0e15\u0e31\u0e27 5.1% \u0e43\u0e19 FY2025 \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e01\u0e33\u0e44\u0e23\u0e02\u0e31\u0e49\u0e19\u0e15\u0e49\u0e19 (Gross Margin) \u0e25\u0e14\u0e25\u0e07 ~440 bps (\u0e08\u0e32\u0e01\u0e04\u0e48\u0e32\u0e40\u0e09\u0e25\u0e35\u0e48\u0e22\u0e1b\u0e35 FY2024 \u0e17\u0e35\u0e48 45.0% \u0e40\u0e2b\u0e25\u0e37\u0e2d 40.6% \u0e43\u0e19 Q1 2026) \u0e41\u0e25\u0e30\u0e01\u0e23\u0e30\u0e41\u0e2a\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14\u0e2d\u0e34\u0e2a\u0e23\u0e30 (Free Cash Flow) \u0e1e\u0e25\u0e34\u0e01\u0e40\u0e1b\u0e47\u0e19\u0e25\u0e1a\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19 (FY2025: \u2212\u0e3f73.7M; Q1 2026: \u2212\u0e3f134.4M) \u0e08\u0e32\u0e01\u0e01\u0e32\u0e23\u0e40\u0e23\u0e48\u0e07 CapEx \u0e17\u0e35\u0e48 annualized \u0e3f916M \u2014 \u0e42\u0e14\u0e22\u0e43\u0e0a\u0e49\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14\u0e43\u0e19\u0e07\u0e1a\u0e14\u0e38\u0e25 (Balance Sheet) \u0e41\u0e25\u0e30\u0e42\u0e04\u0e23\u0e07\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e2b\u0e38\u0e49\u0e19\u0e04\u0e37\u0e19 (Buyback) \u0e3f342.7M \u0e17\u0e35\u0e48\u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 \u0e02\u0e32\u0e14\u0e17\u0e38\u0e19 32% \u0e08\u0e32\u0e01\u0e23\u0e32\u0e04\u0e32\u0e17\u0e35\u0e48\u0e0b\u0e37\u0e49\u0e2d \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 (Revenue) Q2 2026 \u0e1f\u0e37\u0e49\u0e19\u0e15\u0e31\u0e27\u0e41\u0e23\u0e07 (+19.2% YoY) \u0e41\u0e15\u0e48\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 Margin \u0e41\u0e25\u0e30\u0e01\u0e33\u0e44\u0e23\u0e2a\u0e38\u0e17\u0e18\u0e34 (Net Income) \u0e02\u0e2d\u0e07\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e19\u0e31\u0e49\u0e19\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e43\u0e19 source files</p><p>\u0e1b\u0e23\u0e30\u0e40\u0e14\u0e47\u0e19\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14: \u0e01\u0e23\u0e13\u0e35\u0e40\u0e1b\u0e47\u0e19\u0e1a\u0e27\u0e01 (Bull Case) \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e15\u0e31\u0e49\u0e07\u0e2d\u0e22\u0e39\u0e48\u0e1a\u0e19\u0e2a\u0e21\u0e21\u0e15\u0e34\u0e10\u0e32\u0e19\u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e34\u0e2a\u0e39\u0e08\u0e19\u0e4c \u2014 \u0e27\u0e48\u0e32 CapEx \u0e3f867M \u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14 \u0e21\u0e38\u0e48\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e04\u0e27\u0e32\u0e21\u0e08\u0e38\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 margin \u0e2a\u0e39\u0e07 \u0e40\u0e0a\u0e48\u0e19 \u0e2b\u0e49\u0e2d\u0e07 IVF \u0e2b\u0e23\u0e37\u0e2d\u0e2b\u0e49\u0e2d\u0e07\u0e1c\u0e48\u0e32\u0e15\u0e31\u0e14 GRS \u0e43\u0e19\u0e02\u0e13\u0e30\u0e17\u0e35\u0e48\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e1a\u0e23\u0e34\u0e1a\u0e17\u0e2a\u0e19\u0e31\u0e1a\u0e2a\u0e19\u0e38\u0e19\u0e2a\u0e21\u0e21\u0e15\u0e34\u0e10\u0e32\u0e19\u0e15\u0e23\u0e07\u0e02\u0e49\u0e32\u0e21\u0e44\u0e14\u0e49\u0e40\u0e17\u0e48\u0e32\u0e01\u0e31\u0e19: \u0e02\u0e22\u0e32\u0e22\u0e40\u0e15\u0e35\u0e22\u0e07\u0e0a\u0e38\u0e21\u0e0a\u0e19\u0e17\u0e35\u0e48\u0e08\u0e30\u0e01\u0e14 Gross Margin \u0e25\u0e07\u0e16\u0e32\u0e27\u0e23\u0e17\u0e35\u0e48 40\u201342% \u0e43\u0e19\u0e10\u0e32\u0e19\u0e30 Turnaround \u0e04\u0e33\u0e16\u0e32\u0e21\u0e0a\u0e35\u0e49\u0e27\u0e31\u0e14\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 \"P/E \u0e40\u0e17\u0e48\u0e32\u0e44\u0e23?\" \u0e41\u0e15\u0e48\u0e04\u0e37\u0e2d \"\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02\u0e2b\u0e23\u0e37\u0e2d\u0e22\u0e31\u0e07?\" \u2014 \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e15\u0e31\u0e27\u0e41\u0e1b\u0e23\u0e17\u0e35\u0e48\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14 (\u0e2a\u0e40\u0e1b\u0e04\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e02\u0e2d\u0e07 CapEx) \u0e04\u0e33\u0e15\u0e2d\u0e1a\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19</p><p>---</p>",
+  "growth_html": "<ol><li><strong>\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e08\u0e32\u0e01 CapEx \u0e43\u0e2b\u0e21\u0e48 (Revenue Ramp):</strong> CapEx \u0e23\u0e27\u0e21 \u0e3f867M \u0e43\u0e19 FY2024\u2013Q1 2026 \u0e04\u0e37\u0e2d capacity \u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 \u0e16\u0e49\u0e32\u0e40\u0e1b\u0e34\u0e14 commercial Q4 2026 / Q1 2027 revenue \u0e40\u0e1e\u0e34\u0e48\u0e21 \u0e3f250\u2013400M/\u0e1b\u0e35 \u0e17\u0e35\u0e48 Operating Margin 23\u201325% \u0e08\u0e30\u0e2a\u0e23\u0e49\u0e32\u0e07 ROIC 6.6\u201311.5% \u0e02\u0e36\u0e49\u0e19\u0e01\u0e31\u0e1a service mix \u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22</li><li><strong>IVF / Fertility \u2014 Secular Demand:</strong> TFR \u0e02\u0e2d\u0e07\u0e44\u0e17\u0e22 (~1.0\u20131.1) \u0e15\u0e48\u0e33\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e42\u0e25\u0e01 \u2192 demand IVF \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e16\u0e32\u0e27\u0e23 \u0e15\u0e25\u0e32\u0e14 IVF/ART \u0e44\u0e17\u0e22 <span class=\"badge est\">est.</span> ~\u0e3f6\u20139B/\u0e1b\u0e35 \u0e40\u0e15\u0e34\u0e1a\u0e42\u0e15 15\u201320%/\u0e1b\u0e35 IVF \u0e21\u0e35 switching cost \u0e2a\u0e39\u0e07 (\u0e04\u0e19\u0e44\u0e02\u0e49 commitment 3\u20135 cycles \u0e17\u0e35\u0e48 \u0e3f100\u2013200K/\u0e23\u0e2d\u0e1a) \u0e41\u0e25\u0e30 pricing power \u0e08\u0e23\u0e34\u0e07</li><li><strong>Gender Reassignment Surgery:</strong> \u0e44\u0e17\u0e22\u0e40\u0e1b\u0e47\u0e19\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e43\u0e19\u0e08\u0e38\u0e14\u0e2b\u0e21\u0e32\u0e22 GRS \u0e23\u0e30\u0e14\u0e31\u0e1a\u0e42\u0e25\u0e01 [UNOFFICIAL \u2014 \u0e08\u0e32\u0e01 yfinance profile description; \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48 verified \u0e01\u0e31\u0e1a ISAPS \u0e2b\u0e23\u0e37\u0e2d\u0e41\u0e2b\u0e25\u0e48\u0e07\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23] EKH \u0e40\u0e1b\u0e47\u0e19 provider \u0e2b\u0e25\u0e31\u0e01\u0e19\u0e2d\u0e01 Bangkok demand \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e15\u0e32\u0e21 global social acceptance</li><li><strong>Revenue Q2 2026 \u0e40\u0e23\u0e48\u0e07\u0e15\u0e31\u0e27 (+19.2% YoY):</strong> \u0e41\u0e02\u0e47\u0e07\u0e41\u0e01\u0e23\u0e48\u0e07\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e43\u0e19 6 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a \u0e16\u0e49\u0e32 Gross Margin \u0e1f\u0e37\u0e49\u0e19\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19 (\u226540%) \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 inflection \u0e08\u0e32\u0e01\u0e17\u0e31\u0e49\u0e07 volume \u0e41\u0e25\u0e30 case mix \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 Margin Q2 2026 \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e43\u0e19 source files</li><li><strong>Subsidiary Breakeven (\u0e23\u0e30\u0e22\u0e30\u0e01\u0e25\u0e32\u0e07):</strong> Minority interest losses \u0e40\u0e23\u0e48\u0e07\u0e15\u0e31\u0e27 10\u00d7 \u0e43\u0e19 4 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a (Q1 2025: \u2212\u0e3f0.98M \u2192 Q1 2026: \u2212\u0e3f9.66M = 17.2% \u0e02\u0e2d\u0e07\u0e01\u0e33\u0e44\u0e23\u0e2a\u0e38\u0e17\u0e18\u0e34\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19) Breakeven ~FY2027\u20132028 \u0e08\u0e30\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19 drag ~\u0e3f40M/\u0e1b\u0e35 \u0e40\u0e1b\u0e47\u0e19 contributor \u0e43\u0e2b\u0e49\u0e01\u0e33\u0e44\u0e23\u0e23\u0e27\u0e21</li></ol>",
+  "risks_html": "<ol><li><strong>CapEx Trap [UNCOVERED RISK \u2014 Red Team Death 1]:</strong> CapEx \u0e3f867M \u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e04\u0e37\u0e2d \u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07 (Risk) \u0e2b\u0e25\u0e31\u0e01\u0e02\u0e2d\u0e07 thesis \u0e16\u0e49\u0e32 capacity \u0e17\u0e35\u0e48\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e21\u0e38\u0e48\u0e07\u0e40\u0e15\u0e35\u0e22\u0e07 general ward, dialysis \u0e2b\u0e23\u0e37\u0e2d\u0e1c\u0e39\u0e49\u0e2a\u0e39\u0e07\u0e2d\u0e32\u0e22\u0e38 (\u0e2a\u0e2d\u0e14\u0e04\u0e25\u0e49\u0e2d\u0e07\u0e01\u0e31\u0e1a\u0e20\u0e39\u0e21\u0e34\u0e28\u0e32\u0e2a\u0e15\u0e23\u0e4c\u0e2d\u0e38\u0e15\u0e2a\u0e32\u0e2b\u0e01\u0e23\u0e23\u0e21 \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e25\u0e39\u0e01 margin \u0e15\u0e48\u0e33\u0e17\u0e35\u0e48\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e41\u0e25\u0e49\u0e27 \u0e41\u0e25\u0e30 GM \u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e01\u0e25\u0e31\u0e1a FY2024 \u0e41\u0e21\u0e49 revenue \u0e43\u0e01\u0e25\u0e49\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e40\u0e14\u0e34\u0e21) Gross Margin \u0e08\u0e30 cap \u0e16\u0e32\u0e27\u0e23\u0e17\u0e35\u0e48 40\u201342% \u2192 re-rate \u0e40\u0e1b\u0e47\u0e19 community hospital multiple (11\u201313\u00d7) \u2192 intrinsic value \u0e3f2.42B\u20132.99B \u0e40\u0e17\u0e35\u0e22\u0e1a market cap \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 \u0e3f4.12B \u2192 <strong>downside \u221227% \u0e16\u0e36\u0e07 \u221241%</strong> \u0e44\u0e21\u0e48\u0e21\u0e35 source file \u0e43\u0e14\u0e23\u0e30\u0e1a\u0e38\u0e2a\u0e40\u0e1b\u0e04\u0e42\u0e04\u0e23\u0e07\u0e01\u0e32\u0e23</li><li><strong>EPS \u0e25\u0e14\u0e25\u0e07\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07 (Structural EPS Decline):</strong> EPS \u0e17\u0e35\u0e48 normalized \u0e25\u0e14\u0e17\u0e38\u0e01\u0e1b\u0e35\u0e15\u0e31\u0e49\u0e07\u0e41\u0e15\u0e48 FY2023: \u0e3f0.38 \u2192 \u0e3f0.36 \u2192 \u0e3f0.32 \u2192 ~\u0e3f0.28 (Q1 2026 annualized) Core EPS (\u0e2b\u0e31\u0e01\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e2d\u0e37\u0e48\u0e19 volatile) = \u0e3f0.22\u20130.23 annualized \u2192 implied core P/E ~22\u201323\u00d7 \u0e01\u0e48\u0e2d\u0e19 D&A cliff trajectory 3 \u0e1b\u0e35\u0e19\u0e35\u0e49\u0e04\u0e37\u0e2d primary bear signal \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e02\u0e49\u0e2d\u0e2a\u0e31\u0e07\u0e40\u0e01\u0e15\u0e42\u0e14\u0e14\u0e40\u0e14\u0e35\u0e48\u0e22\u0e27</li><li><strong>D&A Cliff \u0e22\u0e31\u0e07\u0e02\u0e49\u0e32\u0e07\u0e2b\u0e19\u0e49\u0e32:</strong> \u0e40\u0e21\u0e37\u0e48\u0e2d CIP \u0e42\u0e2d\u0e19\u0e40\u0e1b\u0e47\u0e19 PPE D&A \u0e23\u0e32\u0e22\u0e1b\u0e35\u0e08\u0e30\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19 ~\u0e3f40\u201360M \u0e16\u0e49\u0e32\u0e40\u0e01\u0e34\u0e14\u0e02\u0e36\u0e49\u0e19\u0e43\u0e19 FY2026 \u0e01\u0e33\u0e44\u0e23\u0e2a\u0e38\u0e17\u0e18\u0e34 (Net Income) \u0e08\u0e30\u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 FY2025 (\u0e3f262M) \u0e01\u0e48\u0e2d\u0e19\u0e1f\u0e37\u0e49\u0e19 P/E \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 15.15\u00d7 \u0e1a\u0e19 TTM earnings \u0e08\u0e30\u0e01\u0e25\u0e32\u0e22\u0e40\u0e1b\u0e47\u0e19 ~18\u00d7 \u0e1a\u0e19 trough earnings</li><li><strong>Payer Mix / SSO Structural Ceiling:</strong> \u0e2a\u0e21\u0e38\u0e17\u0e23\u0e2a\u0e32\u0e04\u0e23\u0e21\u0e35\u0e41\u0e23\u0e07\u0e07\u0e32\u0e19\u0e15\u0e48\u0e32\u0e07\u0e14\u0e49\u0e32\u0e27\u0e43\u0e19\u0e23\u0e30\u0e1a\u0e1a SSO \u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 250,000\u2013300,000 \u0e04\u0e19 [est. \u2014 \u0e44\u0e21\u0e48\u0e21\u0e35\u0e43\u0e19 source files] SSO \u0e08\u0e48\u0e32\u0e22\u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 private-pay 40\u201360% \u0e16\u0e49\u0e32 SSO \u226530% \u0e02\u0e2d\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 \u2192 GM ceiling \u0e16\u0e32\u0e27\u0e23 ~38\u201340% \u2014 \u0e01\u0e32\u0e23\u0e2b\u0e14 5 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e08\u0e32\u0e01 45.0% \u2192 40.6% \u0e2d\u0e32\u0e08\u0e40\u0e1b\u0e47\u0e19 structural shift \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 cyclical</li><li><strong>Capital Allocation Red Flags:</strong> Buyback FY2025 (\u0e3f342.7M \u0e17\u0e35\u0e48 ~\u0e3f7.62/\u0e2b\u0e38\u0e49\u0e19\u0e40\u0e09\u0e25\u0e35\u0e48\u0e22 \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 \u0e02\u0e32\u0e14\u0e17\u0e38\u0e19 32%) \u0e1a\u0e27\u0e01\u0e40\u0e07\u0e34\u0e19\u0e1b\u0e31\u0e19\u0e1c\u0e25 (Dividends) \u0e17\u0e35\u0e48\u0e40\u0e01\u0e34\u0e19 FCF 2 \u0e1b\u0e35\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07 (FY2024: ~\u0e3f430M est. \u0e08\u0e48\u0e32\u0e22\u0e1a\u0e19 FCF +\u0e3f63M; FY2025: ~\u0e3f223M est. \u0e1a\u0e19 FCF \u2212\u0e3f74M) \u0e23\u0e27\u0e21\u0e04\u0e37\u0e19 >\u0e3f650M \u0e43\u0e2b\u0e49\u0e1c\u0e39\u0e49\u0e16\u0e37\u0e2d\u0e2b\u0e38\u0e49\u0e19\u0e17\u0e35\u0e48\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14 \u0e07\u0e1a\u0e14\u0e38\u0e25 (Balance Sheet) \u0e01\u0e33\u0e25\u0e31\u0e07\u0e16\u0e39\u0e01\u0e14\u0e36\u0e07\u0e2d\u0e2d\u0e01</li></ol>",
+  "edge_html": "\u0e15\u0e25\u0e32\u0e14\u0e14\u0e39\u0e40\u0e2b\u0e21\u0e37\u0e2d\u0e19 price EKH \u0e40\u0e1b\u0e47\u0e19 recovery trade \u0e17\u0e35\u0e48 PE normalized ~14.7\u00d7 \u0e04\u0e32\u0e14\u0e01\u0e33\u0e44\u0e23\u0e01\u0e25\u0e31\u0e1a\u0e2a\u0e39\u0e48 \u0e3f280\u2013300M \u0e40\u0e21\u0e37\u0e48\u0e2d capex cycle \u0e2a\u0e34\u0e49\u0e19\u0e2a\u0e38\u0e14 \u0e21\u0e38\u0e21\u0e21\u0e2d\u0e07\u0e17\u0e35\u0e48\u0e41\u0e15\u0e01\u0e15\u0e48\u0e32\u0e07\u0e02\u0e2d\u0e07\u0e40\u0e23\u0e32: \u0e15\u0e25\u0e32\u0e14 under-estimate \u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07 (Risk) 2 \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e17\u0e35\u0e48 compound \u0e01\u0e31\u0e19 \u0e2b\u0e19\u0e36\u0e48\u0e07 \u2014 D&A cliff \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e32: D&A Q4 2025 \u0e40\u0e1e\u0e35\u0e22\u0e07 \u0e3f11.22M vs. \u0e3f19\u201321M \u0e43\u0e19\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e2d\u0e37\u0e48\u0e19 \u0e1a\u0e48\u0e07\u0e0a\u0e35\u0e49 CIP \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e31\u0e14\u0e04\u0e48\u0e32\u0e40\u0e2a\u0e37\u0e48\u0e2d\u0e21 \u2192 trough earnings \u0e22\u0e31\u0e07\u0e2d\u0e22\u0e39\u0e48\u0e02\u0e49\u0e32\u0e07\u0e2b\u0e19\u0e49\u0e32 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e02\u0e49\u0e32\u0e07\u0e2b\u0e25\u0e31\u0e07 \u0e2a\u0e2d\u0e07 \u2014 Core NI Q1 2026 = \u0e3f44\u201346M (\u0e2b\u0e31\u0e01 other non-operating income \u0e3f12.45M \u0e17\u0e35\u0e48 volatile = 22% \u0e02\u0e2d\u0e07\u0e01\u0e33\u0e44\u0e23\u0e2a\u0e38\u0e17\u0e18\u0e34\u0e17\u0e35\u0e48\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19) \u2192 trailing core P/E ~22\u201323\u00d7 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 15\u00d7 \u0e21\u0e38\u0e21\u0e21\u0e2d\u0e07\u0e19\u0e35\u0e49\u0e08\u0e30\u0e1e\u0e34\u0e2a\u0e39\u0e08\u0e19\u0e4c\u0e2b\u0e23\u0e37\u0e2d\u0e2b\u0e31\u0e01\u0e25\u0e49\u0e32\u0e07\u0e17\u0e31\u0e19\u0e17\u0e35: \u0e07\u0e1a Q3 2026 (\u0e43\u0e01\u0e25\u0e49\u0e21\u0e32\u0e01\u0e41\u0e25\u0e49\u0e27) \u0e08\u0e30\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22 D&A \u2265\u0e3f20M/q (cliff \u0e01\u0e33\u0e25\u0e31\u0e07\u0e21\u0e32) \u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22\u0e2a\u0e40\u0e1b\u0e04 capex \u0e41\u0e25\u0e30\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 Margin Q2 2026 ---",
+  "sector_lens": {
+    "classification": "\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e40\u0e2d\u0e01\u0e0a\u0e19 (primary) \u2014 \u0e40\u0e19\u0e49\u0e19 specialty (IVF, GRS, \u0e28\u0e31\u0e25\u0e22\u0e01\u0e23\u0e23\u0e21\u0e04\u0e27\u0e32\u0e21\u0e07\u0e32\u0e21) \u0e1e\u0e23\u0e49\u0e2d\u0e21 community hospital overlay (general OPD/IPD, SSO ward) \u0e44\u0e21\u0e48\u0e21\u0e35 secondary segment",
+    "tam": "\u0e15\u0e25\u0e32\u0e14\u0e42\u0e23\u0e07\u0e1e\u0e22\u0e32\u0e1a\u0e32\u0e25\u0e40\u0e2d\u0e01\u0e0a\u0e19\u0e44\u0e17\u0e22 <span class=\"badge est\">est.</span> ~\u0e3f350\u2013400B/\u0e1b\u0e35 CAGR ~8\u201310% Derived top-down: \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 (Revenue) EKH FY2025 \u0e3f1,240M \u00f7 \u0e15\u0e25\u0e32\u0e14\u0e23\u0e27\u0e21 \u2192 \u0e2a\u0e48\u0e27\u0e19\u0e41\u0e1a\u0e48\u0e07\u0e15\u0e25\u0e32\u0e14 ~0.31\u20130.35% [est. \u2014 verify \u0e01\u0e31\u0e1a \u0e01\u0e2a\u0e18./\u0e2a\u0e16\u0e32\u0e1a\u0e31\u0e19\u0e27\u0e34\u0e08\u0e31\u0e22\u0e23\u0e30\u0e1a\u0e1a\u0e2a\u0e32\u0e18\u0e32\u0e23\u0e13\u0e2a\u0e38\u0e02] \u0e15\u0e25\u0e32\u0e14\u0e22\u0e48\u0e2d\u0e22: IVF/ART <span class=\"badge est\">est.</span> \u0e3f6\u20139B/\u0e1b\u0e35 CAGR 15\u201320%; GRS <span class=\"badge est\">est.</span> \u0e3f3\u20139B/\u0e1b\u0e35 (10,000\u201315,000 \u0e23\u0e32\u0e22 \u00d7 \u0e3f300,000\u2013600,000 \u2014 verify \u0e01\u0e31\u0e1a ISAPS Thailand) \u0e0a\u0e48\u0e2d\u0e07\u0e27\u0e48\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e15\u0e34\u0e1a\u0e42\u0e15 (runway) geographic 2.5\u20134\u00d7 \u0e08\u0e32\u0e01\u0e10\u0e32\u0e19\u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 <span class=\"badge est\">est.</span> \u0e15\u0e31\u0e27\u0e40\u0e25\u0e02 TAM \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e40\u0e1b\u0e47\u0e19\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23 \u0e15\u0e49\u0e2d\u0e07 verify \u0e01\u0e48\u0e2d\u0e19\u0e43\u0e0a\u0e49\u0e43\u0e19 formal model",
+    "priced_in": "\u0e17\u0e35\u0e48 \u0e3f5.15 \u0e1a\u0e19 TTM EPS \u0e3f0.32 P/E = 16\u00d7 \u0e1a\u0e48\u0e07\u0e0a\u0e35\u0e49\u0e15\u0e25\u0e32\u0e14\u0e04\u0e32\u0e14 earnings \u0e40\u0e15\u0e34\u0e1a\u0e42\u0e15\u0e41\u0e1a\u0e1a flat-to-modest \u0e43\u0e19 2\u20133 \u0e1b\u0e35\u0e02\u0e49\u0e32\u0e07\u0e2b\u0e19\u0e49\u0e32 \u0e1a\u0e19 core EPS (\u0e3f0.22\u20130.23 \u0e2b\u0e25\u0e31\u0e07\u0e2b\u0e31\u0e01 non-op income) implied P/E ~22\u201323\u00d7 \u0e0b\u0e36\u0e48\u0e07\u0e08\u0e30 justify \u0e44\u0e14\u0e49\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e40\u0e21\u0e37\u0e48\u0e2d capex \u0e2a\u0e23\u0e49\u0e32\u0e07 specialty capacity \u0e08\u0e23\u0e34\u0e07\u0e41\u0e25\u0e30 GM \u0e1f\u0e37\u0e49\u0e19\u0e08\u0e23\u0e34\u0e07 \u0e15\u0e25\u0e32\u0e14\u0e14\u0e39\u0e40\u0e2b\u0e21\u0e37\u0e2d\u0e19\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48 price in \u0e17\u0e31\u0e49\u0e07 D&A cliff \u0e41\u0e25\u0e30 core earnings adjustment \u0e14\u0e39 <code>--step valuation</code> \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a reverse-DCF \u0e40\u0e15\u0e47\u0e21\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a",
+    "narrative": "EKH \u0e04\u0e37\u0e2d specialty play \u0e17\u0e35\u0e48\u0e0b\u0e48\u0e2d\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e43\u0e19 community hospital \u0e02\u0e2d\u0e07\u0e08\u0e31\u0e07\u0e2b\u0e27\u0e31\u0e14 \u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27\u0e40\u0e0a\u0e34\u0e07\u0e1a\u0e27\u0e01: tailwind IVF \u0e08\u0e32\u0e01 TFR \u0e44\u0e17\u0e22 ~1.0 (\u0e15\u0e48\u0e33\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e42\u0e25\u0e01) \u0e41\u0e25\u0e30 demand GRS \u0e17\u0e35\u0e48\u0e40\u0e15\u0e34\u0e1a\u0e42\u0e15\u0e15\u0e32\u0e21 global acceptance \u2192 premium margin; CapEx \u0e3f867M \u0e40\u0e1e\u0e34\u0e48\u0e21 specialty capacity \u0e1e\u0e2d\u0e14\u0e35\u0e01\u0e31\u0e1a\u0e17\u0e35\u0e48 demand inflect \u0e02\u0e36\u0e49\u0e19 \u2192 re-rate \u0e08\u0e32\u0e01 community multiple \u0e2a\u0e39\u0e48 specialty multiple \u0e40\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e23\u0e32\u0e27\u0e40\u0e0a\u0e34\u0e07\u0e25\u0e1a: EKH \u0e40\u0e1b\u0e47\u0e19 community hospital \u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e17\u0e35\u0e48\u0e42\u0e14\u0e14\u0e40\u0e14\u0e48\u0e19 (Q3 2024, GM 48.6%) \u0e04\u0e37\u0e2d outlier \u0e02\u0e2d\u0e07 case mix Margin \u0e01\u0e33\u0e25\u0e31\u0e07 mean-revert \u0e2a\u0e39\u0e48 40\u201342% \u0e15\u0e32\u0e21\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07 \u0e41\u0e25\u0e30 capex \u0e40\u0e2a\u0e23\u0e34\u0e21\u0e15\u0e31\u0e27\u0e15\u0e19\u0e19\u0e31\u0e49\u0e19 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e2a\u0e27\u0e19\u0e17\u0e32\u0e07",
+    "metrics": [
+      "Gross Margin: 40.64% \u2192 \u2212250 bps QoQ (Q4 2025: 43.14%)",
+      "Operating Margin: 22.01% \u2192 \u2212616 bps QoQ (Q4 2025: 28.17%)",
+      "EBITDA Margin: 28.4% Q1 2026 (D&A = \u0e3f19.57M) vs. Q4 2025 \u0e1a\u0e34\u0e14\u0e40\u0e1a\u0e37\u0e2d\u0e19\u0e08\u0e32\u0e01 D&A anomaly (\u0e3f11.22M)",
+      "Minority Interest Drain: \u2212\u0e3f9.66M (Q1 2026) vs. \u2212\u0e3f4.80M (Q4 2025) \u2192 \u0e40\u0e23\u0e48\u0e07\u0e15\u0e31\u0e27 +101% QoQ",
+      "CapEx/OCF (annualized Q1 2026): ~2.4\u20132.9\u00d7 \u2014 \u0e40\u0e01\u0e34\u0e19 self-funding capacity \u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d 5 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a"
+    ],
+    "questions": [
+      "OPD visits/day, IPD bed days, Bed occupancy rate \u2014 \u0e44\u0e21\u0e48\u0e21\u0e35\u0e43\u0e19 source files \u0e43\u0e14; \u0e08\u0e33\u0e40\u0e1b\u0e47\u0e19\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a volume vs. case mix deterioration",
+      "Payer mix (Cash : Private Insurance : SSO : Foreign %) \u2014 \u0e15\u0e31\u0e27\u0e41\u0e1b\u0e23\u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e23\u0e39\u0e49\u0e17\u0e35\u0e48\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14; \u0e01\u0e33\u0e2b\u0e19\u0e14\u0e27\u0e48\u0e32 GM 40\u201342% \u0e04\u0e37\u0e2d structural \u0e2b\u0e23\u0e37\u0e2d cyclical",
+      "\u0e2a\u0e40\u0e1b\u0e04 capex \u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e40\u0e1b\u0e34\u0e14 commercial \u2014 \u0e01\u0e33\u0e2b\u0e19\u0e14 timing D&A cliff \u0e41\u0e25\u0e30 margin profile \u0e02\u0e2d\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e43\u0e2b\u0e21\u0e48",
+      "JCI/JCIA \u0e2b\u0e23\u0e37\u0e2d HA Thailand accreditation status \u2014 \u0e01\u0e33\u0e2b\u0e19\u0e14 ceiling \u0e02\u0e2d\u0e07 medical tourism premium",
+      "\u0e27\u0e31\u0e19\u0e2b\u0e21\u0e14\u0e2d\u0e32\u0e22\u0e38 BOI tax exemption \u2014 \u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07 (Risk) EPS \u0e25\u0e14\u0e40\u0e1e\u0e34\u0e48\u0e21 ~2.5% \u0e0b\u0e49\u0e2d\u0e19\u0e01\u0e31\u0e1a D&A cliff"
+    ]
+  },
+  "kill_price": {
+    "conviction": "Low",
+    "kill_price": "\u0e3f4.20 \u2014 \u0e23\u0e30\u0e14\u0e31\u0e1a intrinsic value \u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14\u0e15\u0e32\u0e21 Munger verdict (12\u201314\u00d7 core trough earnings \u0e3f185\u2013200M \u0e2b\u0e25\u0e31\u0e07\u0e2b\u0e31\u0e01 D&A cliff \u0e41\u0e25\u0e30 minority interest drain); \u0e01\u0e32\u0e23\u0e2b\u0e25\u0e38\u0e14\u0e1b\u0e34\u0e14\u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 \u0e3f4.20 \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e1a\u0e19 confirmed capex disclosure \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e27\u0e48\u0e32 bear case \u0e01\u0e33\u0e25\u0e31\u0e07\u0e40\u0e01\u0e34\u0e14\u0e02\u0e36\u0e49\u0e19",
+    "kill_trigger": "\u0e1c\u0e39\u0e49\u0e1a\u0e23\u0e34\u0e2b\u0e32\u0e23\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e27\u0e48\u0e32\u0e42\u0e04\u0e23\u0e07\u0e01\u0e32\u0e23 CapEx \u0e3f867M \u0e2a\u0e48\u0e27\u0e19\u0e43\u0e2b\u0e0d\u0e48\u0e40\u0e1b\u0e47\u0e19\u0e01\u0e32\u0e23\u0e02\u0e22\u0e32\u0e22\u0e40\u0e15\u0e35\u0e22\u0e07 general ward / dialysis / \u0e1c\u0e39\u0e49\u0e2a\u0e39\u0e07\u0e2d\u0e32\u0e22\u0e38 \u2014 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e2b\u0e49\u0e2d\u0e07 IVF \u0e2b\u0e23\u0e37\u0e2d\u0e2b\u0e49\u0e2d\u0e07\u0e1c\u0e48\u0e32\u0e15\u0e31\u0e14 GRS/cosmetic \u2014 \u0e17\u0e33\u0e43\u0e2b\u0e49 thesis re-rating \u0e40\u0e1b\u0e47\u0e19 specialty hospital \u0e40\u0e1b\u0e47\u0e19\u0e44\u0e1b\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e16\u0e32\u0e27\u0e23",
+    "rationale": ""
+  },
+  "munger_verdict": "PASS"
+};
+
+// ─── THEME-AWARE CHART COLORS ────────────────────────────────────────────────
+const cs = getComputedStyle(document.documentElement);
+const tok = name => cs.getPropertyValue(name).trim();
+const COLORS = {
+  ink: tok('--ink'), muted: tok('--muted'), line: tok('--line'),
+  accent: tok('--accent'), accent2: tok('--accent2'), good: tok('--good'), danger: tok('--danger'),
+};
+
+const cd = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: COLORS.muted, font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: COLORS.muted, font: { size: 11 } }, grid: { color: COLORS.line } },
+    y: { ticks: { color: COLORS.muted, font: { size: 11 } }, grid: { color: COLORS.line } }
+  }
+};
+
+const annual   = [...REPORT_DATA.annual_rows].reverse();
+const quarters = [...REPORT_DATA.quarters].reverse();
+
+new Chart(document.getElementById('annualRevenueChart'), {
+  type: 'bar',
+  data: { labels: annual.map(a => a.label),
+    datasets: [{ label: 'Revenue ($B)', data: annual.map(a => a.revenue_b), backgroundColor: COLORS.accent2, borderRadius: 4 }] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('annualMarginChart'), {
+  type: 'line',
+  data: { labels: annual.map(a => a.label),
+    datasets: [
+      { label: 'Gross', data: annual.map(a => a.gross_margin_pct), borderColor: COLORS.good, tension: 0.3, fill: false },
+      { label: 'Op.',   data: annual.map(a => a.op_margin_pct),    borderColor: COLORS.accent2, tension: 0.3, fill: false },
+      { label: 'Net',   data: annual.map(a => a.net_margin_pct),   borderColor: COLORS.accent, tension: 0.3, fill: false },
+    ] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('quarterlyRevenueChart'), {
+  type: 'bar',
+  data: { labels: quarters.map(q => q.label),
+    datasets: [{ label: 'Revenue ($B)', data: quarters.map(q => q.revenue_b),
+      backgroundColor: quarters.map((_, i, a) => i === a.length - 1 ? COLORS.accent : COLORS.accent2), borderRadius: 4 }] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: { labels: quarters.map(q => q.label),
+    datasets: [
+      { label: 'YoY %', data: quarters.map(q => q.yoy_growth), borderColor: COLORS.good, tension: 0.3, fill: false },
+      { label: 'QoQ %', data: quarters.map(q => q.qoq_growth || 0), borderColor: COLORS.accent, tension: 0.3, fill: false, borderDash: [4,4] },
+    ] },
+  options: { ...cd }
+});
+
+// ─── EXECUTIVE SUMMARY ────────────────────────────────────────────────────────
+document.getElementById('exec').innerHTML = REPORT_DATA.exec_summary_html || '';
+
+// ─── ANNUAL / QUARTERLY TABLES ─────────────────────────────────────────────────
+const atbody = document.getElementById('annualTable');
+REPORT_DATA.annual_rows.forEach(a => {
+  const yoy = a.yoy_growth > 0 ? `<span class="up">+${a.yoy_growth}%</span>` : a.yoy_growth < 0 ? `<span class="down">${a.yoy_growth}%</span>` : '—';
+  atbody.innerHTML += `<tr><td><b>${a.label}</b></td><td>$${a.revenue_b}B</td><td>${yoy}</td><td>${a.gross_margin_pct}%</td><td>${a.op_margin_pct}%</td><td>$${a.net_income_b}B</td><td>${a.fcf_b ? '$'+a.fcf_b+'B' : '—'}</td><td>${a.eps != null ? '$'+a.eps : 'N/A'}</td></tr>`;
+});
+
+const qtbody = document.getElementById('quarterlyTable');
+REPORT_DATA.quarters.forEach(q => {
+  const yoy = q.yoy_growth > 0 ? `<span class="up">+${q.yoy_growth}%</span>` : q.yoy_growth < 0 ? `<span class="down">${q.yoy_growth}%</span>` : '—';
+  const qoq = q.qoq_growth > 0 ? `<span class="up">+${q.qoq_growth}%</span>` : q.qoq_growth < 0 ? `<span class="down">${q.qoq_growth}%</span>` : '—';
+  qtbody.innerHTML += `<tr><td><b>${q.label}</b></td><td>$${q.revenue_b}B</td><td>${yoy}</td><td>${qoq}</td><td>${q.gross_margin_pct}%</td><td>${q.op_margin_pct}%</td><td>${q.net_income_b ? '$'+q.net_income_b+'B' : '—'}</td><td>${q.fcf_b ? '$'+q.fcf_b+'B' : '—'}</td><td>${q.eps}</td></tr>`;
+});
+
+// ─── GUIDANCE TABLE ───────────────────────────────────────────────────────────
+const gtbody = document.getElementById('guidanceTable');
+REPORT_DATA.guidance.forEach(g => {
+  const r = (g.result || '').toLowerCase();
+  const cls = r.includes('beat') ? 'beat' : r.includes('miss') ? 'miss' : (r.includes('inline') || r.includes('in-line')) ? 'inline-r' : 'neutral';
+  gtbody.innerHTML += `<tr><td>${g.period}</td><td>${g.metric}</td><td>${g.guidance}</td><td>${g.actual}</td><td><span class="${cls}">${g.result || '—'}</span></td></tr>`;
+});
+
+// ─── GROWTH DRIVERS / KEY RISKS (shared <ol><li> HTML from the parser) ────────
+document.getElementById('growthList').innerHTML = (REPORT_DATA.growth_html || '').replace(/^<ol>|<\/ol>$/g, '');
+document.getElementById('riskList').innerHTML = (REPORT_DATA.risks_html || '').replace(/^<ol>|<\/ol>$/g, '');
+
+// ─── BULL / BEAR + EDGE ─────────────────────────────────────────────────────────
+const bullList = document.getElementById('bullList');
+REPORT_DATA.bull_case.forEach(b => { bullList.innerHTML += `<li>${b}</li>`; });
+const bearList = document.getElementById('bearList');
+REPORT_DATA.bear_case.forEach(b => { bearList.innerHTML += `<li>${b}</li>`; });
+if (REPORT_DATA.edge_html) {
+  document.getElementById('edgeCallout').hidden = false;
+  document.getElementById('edgeText').innerHTML = REPORT_DATA.edge_html;
+}
+
+// ─── SECTOR LENS ───────────────────────────────────────────────────────────────
+const lens = REPORT_DATA.sector_lens || {};
+if (lens.classification || lens.tam || lens.narrative) {
+  document.getElementById('lens').hidden = false;
+  document.getElementById('lensClassification').innerHTML = lens.classification || '—';
+  document.getElementById('lensTam').innerHTML = lens.tam || '—';
+  document.getElementById('lensPricedIn').innerHTML = lens.priced_in || '—';
+  document.getElementById('lensNarrative').innerHTML = lens.narrative || '—';
+  const lm = document.getElementById('lensMetrics');
+  (lens.metrics || []).forEach(m => { lm.innerHTML += `<li>${m}</li>`; });
+  const lq = document.getElementById('lensQuestions');
+  (lens.questions || []).forEach(q => { lq.innerHTML += `<li>${q}</li>`; });
+}
+
+// ─── KEY METRICS ──────────────────────────────────────────────────────────────
+const metricsWrap = document.getElementById('metricsWatch');
+REPORT_DATA.key_metrics.forEach(m => {
+  metricsWrap.innerHTML += `<div class="metric-row"><span class="metric-name">${m.name}</span><span class="metric-threshold">${m.threshold}</span></div>`;
+});
+
+// ─── KILL PRICE & CONVICTION ────────────────────────────────────────────────────
+const kp = REPORT_DATA.kill_price || {};
+if (kp.conviction || kp.kill_price) {
+  document.getElementById('killbar').hidden = false;
+  document.getElementById('killConviction').innerHTML = kp.conviction || '—';
+  document.getElementById('killPrice').innerHTML = kp.kill_price || '—';
+  document.getElementById('killTrigger').innerHTML = kp.kill_trigger || '—';
+  document.getElementById('killRationale').innerHTML = kp.rationale || '';
+}
+if (kp.conviction) {
+  // strip HTML tags for the compact stat-tile value (e.g. "<strong>Medium</strong>" -> "Medium")
+  const plainConviction = kp.conviction.replace(/<[^>]+>/g, '').trim();
+  const verdict = REPORT_DATA.munger_verdict || '—';
+  const subEl = document.getElementById('convictionSub');
+  document.getElementById('convictionKpi').hidden = false;
+  document.getElementById('convictionValue').textContent = plainConviction;
+  subEl.textContent = 'Munger: ' + verdict;
+  subEl.className = 'kpi-change ' + (verdict.toUpperCase() === 'BUY' ? 'up' : verdict ? 'down' : 'neutral');
+}
+
+// ─── TOC SCROLL-SPY ───────────────────────────────────────────────────────────
+const tocLinks = Array.from(document.querySelectorAll('#tocNav a'));
+const targets = tocLinks.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+if ('IntersectionObserver' in window && targets.length) {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  targets.forEach(t => obs.observe(t));
+}
+</script>
+</body>
+</html>
