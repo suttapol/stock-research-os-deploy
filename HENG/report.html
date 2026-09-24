@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HENG Research Report — Stock Research OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Taviraj:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --paper:#f3efe4; --ink:#221d16; --muted:#6f6350; --card:#fffdf7; --line:#ddd2b8;
+      --accent:#d9720d; --accent-ink:#ffffff; --accent2:#0e7a6f; --accent2-bg:#dcf0ec;
+      --danger:#c53a2c; --danger-bg:#fbe2de; --good:#1f8a4c; --good-bg:#dcf1e2; --warn-bg:#fbecc9;
+      --shadow: 0 10px 28px rgba(34,29,22,.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper:#161310; --ink:#f2ead9; --muted:#c2b294; --card:#211c15; --line:#3c3323;
+        --accent:#ffab4d; --accent-ink:#1a1208; --accent2:#4fd8c8; --accent2-bg:#123330;
+        --danger:#ff8a75; --danger-bg:#3a1c16; --good:#5fe093; --good-bg:#153322; --warn-bg:#3d2e10;
+        --shadow: 0 10px 30px rgba(0,0,0,.45);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--paper); color: var(--ink); font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', -apple-system, sans-serif; font-size: 14px; line-height: 1.7; padding: 0 16px; }
+    h1, h2, h3 { font-family: 'Taviraj', 'Noto Serif Thai', serif; text-wrap: balance; letter-spacing: -.01em; }
+    a { color: var(--accent2); }
+    code { font-family: 'IBM Plex Mono', monospace; background: var(--accent2-bg); color: var(--accent2); padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+    .num, .tabular { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    .badge { display:inline-block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:5px; margin:0 2px; }
+    .badge.est { background: var(--warn-bg); color: var(--accent); }
+    .badge.unverified { background: var(--danger-bg); color: var(--danger); }
+
+    /* Shell: sticky TOC + main content */
+    .shell { max-width: 1200px; margin: 0 auto; padding-block: 28px 60px; display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 26px; align-items: start; }
+    .toc { position: sticky; top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
+    .toc strong { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 10px; }
+    .toc a { display: block; color: var(--muted); text-decoration: none; font-size: .86rem; padding: 6px 9px; border-radius: 8px; margin-bottom: 2px; }
+    .toc a:hover { background: var(--accent2-bg); color: var(--accent2); }
+    .toc a.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+    main { min-width: 0; }
+
+    /* Header */
+    .header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 22px; }
+    .eyebrow { font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+    .ticker-badge { font-size: 42px; font-weight: 700; line-height: 1; }
+    .company-name { font-size: 16px; color: var(--muted); margin-top: 4px; }
+    .meta-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .pill { border:1px solid var(--line); background:var(--card); padding:5px 11px; border-radius:999px; font-size:.82rem; color:var(--muted); }
+    .pill b { color: var(--ink); }
+    .pill.flag { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); font-weight: 600; }
+
+    /* Exec summary */
+    .exec-summary { max-width: 74ch; margin-bottom: 26px; font-size: 1rem; }
+    .exec-summary p { margin: 0 0 1em; }
+    .exec-summary p:last-child { margin-bottom: 0; }
+
+    /* Cards */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); }
+    .card-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; font-weight: 600; font-family: 'IBM Plex Sans Thai', sans-serif; }
+
+    /* KPI boxes */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; box-shadow: var(--shadow); }
+    .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi-value { font-size: 22px; font-weight: 700; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+    .kpi-change { font-size: 12px; margin-top: 2px; }
+    .up { color: var(--good); }
+    .down { color: var(--danger); }
+    .neutral { color: var(--muted); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--line); font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    td:first-child { font-family: 'IBM Plex Sans Thai', sans-serif; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--accent2-bg); }
+    .beat { color: var(--good); font-weight: 600; }
+    .miss { color: var(--danger); font-weight: 600; }
+    .inline-r { color: var(--accent); font-weight: 600; }
+
+    /* Section headers */
+    .section { margin-bottom: 24px; scroll-margin-top: 16px; }
+    .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-family: 'Taviraj', serif; }
+
+    /* Growth drivers — numbered card list */
+    ol.numbered { padding-left: 0; list-style: none; counter-reset: n; }
+    ol.numbered li { counter-increment: n; position: relative; padding: 10px 14px 10px 40px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; }
+    ol.numbered li::before { content: counter(n); position: absolute; left: 12px; top: 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--accent2); }
+    .growth-list li { border-left: 4px solid var(--accent2); }
+
+    /* Key risks — tinted callouts (full background, not just a border) so
+    severity reads at a glance rather than blending into a plain card list */
+    ol.risk-list { padding-left: 0; list-style: none; counter-reset: n; }
+    .risk-list li { counter-increment: n; position: relative; padding: 12px 16px 12px 44px; margin-bottom: 8px; background: var(--danger-bg); border-radius: 10px; font-size: 13.5px; }
+    .risk-list li::before { content: counter(n); position: absolute; left: 14px; top: 12px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--danger); }
+
+    /* Bull / Bear */
+    .bull-bear { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bull-card, .bear-card { border-radius: 12px; padding: 16px; }
+    .bull-card { background: var(--good-bg); }
+    .bear-card { background: var(--danger-bg); }
+    .bull-card .card-title { color: var(--good); }
+    .bear-card .card-title { color: var(--danger); }
+    ul.case-list { padding-left: 0; list-style: none; }
+    ul.case-list li { margin-bottom: 8px; font-size: 13px; }
+    .edge-callout { margin-top: 12px; background: var(--warn-bg); border-radius: 10px; padding: 14px 16px; font-size: 13.5px; }
+    .edge-callout .edge-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin-bottom: 5px; }
+
+    /* Sector lens */
+    .lens-field { margin-bottom: 14px; font-size: 13.5px; }
+    .lens-field .lens-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent2); font-weight: 700; margin-bottom: 4px; }
+    .lens-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+    .lens-cols h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+    ul.tight { padding-left: 1.1em; margin: 0; }
+    ul.tight li { margin: 6px 0; font-size: 13px; }
+
+    /* Metrics watchlist */
+    .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); gap: 12px; }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-name { font-weight: 500; }
+    .metric-threshold { font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--accent2-bg); color: var(--accent2); padding: 2px 8px; border-radius: 4px; }
+
+    /* Kill price banner */
+    .killbar { background: linear-gradient(135deg, var(--ink), color-mix(in srgb, var(--ink) 78%, var(--accent))); color: var(--paper); border-radius: 16px; padding: 24px 26px; margin-bottom: 24px; scroll-margin-top: 16px; }
+    .killbar h2 { color: var(--paper); margin: 0 0 14px; font-size: 20px; }
+    .killbar .field { margin: 0 0 9px; font-size: .95rem; }
+    .killbar .field b { color: var(--accent); }
+    .killbar .rationale { margin-top: 12px; font-size: .86rem; opacity: .85; }
+
+    /* Chart container */
+    .chart-wrap { height: 220px; position: relative; }
+
+    /* Footer */
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .toc nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    }
+    @media (max-width: 600px) {
+      .grid-2, .grid-3, .bull-bear, .lens-cols { grid-template-columns: 1fr; }
+      .ticker-badge { font-size: 32px; }
+      .toc nav { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sticky table of contents -->
+  <aside class="toc" aria-label="สารบัญ">
+    <strong>สารบัญ</strong>
+    <nav id="tocNav">
+      <a href="#exec">บทสรุป</a>
+      <a href="#financials">ผลประกอบการ</a>
+      <a href="#guidance">Guidance</a>
+      <a href="#growth">Growth Drivers</a>
+      <a href="#risks">ความเสี่ยง</a>
+      <a href="#bullbear">Bull/Bear</a>
+      <a href="#lens">Sector Lens</a>
+      <a href="#watch">Metrics</a>
+      <a href="#kill">Kill Price</a>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- Header -->
+    <div class="header">
+      <div class="eyebrow">Stock Research OS · 2026-09-23</div>
+      <div class="ticker-badge">HENG</div>
+      <div class="company-name">Heng Leasing and Capital Public Company Limited</div>
+      <div class="meta-row">
+        <span class="pill">Sector <b>Financial Services</b></span>
+        <span class="pill">Industry <b>Credit Services</b></span>
+        <span class="pill">Market Cap <b>N/A</b></span>
+        <span class="pill" style="color:var(--danger);font-weight:700;background:var(--danger-bg);padding:2px 10px;border-radius:12px;">Lynch: Turnaround</span>
+      </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="exec-summary section" id="exec"></div>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Revenue (TTM)</div>
+        <div class="kpi-value">$1.0B</div>
+        <div class="kpi-change up">-27.2% YoY</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Gross Margin</div>
+        <div class="kpi-value">23.6%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Operating Margin</div>
+        <div class="kpi-value">25.1%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Free Cash Flow</div>
+        <div class="kpi-value">N/A</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">P/E (TTM)</div>
+        <div class="kpi-value">44.5x</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Forward P/E</div>
+        <div class="kpi-value">14.8x</div>
+      </div>
+      <div class="kpi" id="convictionKpi" hidden>
+        <div class="kpi-label">Conviction</div>
+        <div class="kpi-value" id="convictionValue"></div>
+        <div class="kpi-change down" id="convictionSub"></div>
+      </div>
+    </div>
+
+    <!-- Lynch Card -->
+      <div class="card section" style="border-left:3px solid var(--danger);">
+    <div class="card-title" style="display:flex;align-items:center;gap:10px;">
+      Peter Lynch Classification
+      <span style="color:var(--danger);font-weight:700;background:var(--danger-bg);padding:2px 10px;border-radius:12px;">Turnaround ↩️</span>
+    </div>
+    
+    <p style="margin:0;color:var(--muted);line-height:1.6;"><strong style="color:var(--danger);">Implication:</strong> - TTM PE 44.5× สะท้อนกำไร trough — ไม่ใช่ fair value; forward PE 14.8× มีความหมายมากกว่า แต่ขึ้นอยู่กับว่า provision จะ normalize จริง
+- Turnaround thesis ต้องมี "catalyst เฉพาะ" ที่ confirmed ก่อนลงทุน — ยังไม่มี explicit catalyst (ไม่มี guidance, provision volatile, loan book ยังหด)
+- Risk/reward ไม่สมมาตร: upside ถ้า normalize สูง; downside ถ้า provision หางยาว = equity value กัดเซาะต่อ
+
+---</p>
+  </div>
+
+    <!-- Financials anchor -->
+    <div id="financials"></div>
+
+    <!-- Charts Row 1: Annual -->
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-title">Annual Revenue — 5 Years ($B)</div>
+        <div class="chart-wrap"><canvas id="annualRevenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Annual Margins — 5 Years</div>
+        <div class="chart-wrap"><canvas id="annualMarginChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2: Quarterly -->
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-title">Quarterly Revenue — 8 Quarters ($B)</div>
+        <div class="chart-wrap"><canvas id="quarterlyRevenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Quarterly YoY & QoQ Growth %</div>
+        <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Annual Table -->
+    <div class="section">
+      <div class="section-title">Annual Performance — 5 Years</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fiscal Year</th><th>Revenue</th><th>YoY</th>
+              <th>Gross Margin</th><th>Op. Margin</th>
+              <th>Net Income</th><th>FCF</th><th>EPS</th>
+            </tr>
+          </thead>
+          <tbody id="annualTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quarterly Table -->
+    <div class="section">
+      <div class="section-title">Quarterly Performance — 8 Quarters</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quarter</th><th>Revenue</th><th>YoY</th><th>QoQ</th>
+              <th>Gross Margin</th><th>Op. Margin</th>
+              <th>Net Income</th><th>FCF</th><th>EPS</th>
+            </tr>
+          </thead>
+          <tbody id="quarterlyTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Guidance Tracker -->
+    <div class="section" id="guidance">
+      <div class="section-title">Guidance Tracker</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Metric</th>
+              <th>Guidance</th>
+              <th>Actual</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="guidanceTable">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Growth Drivers -->
+    <div class="section" id="growth">
+      <div class="section-title">Key Growth Drivers</div>
+      <ol class="numbered growth-list" id="growthList"></ol>
+    </div>
+
+    <!-- Key Risks -->
+    <div class="section" id="risks">
+      <div class="section-title">Key Risks</div>
+      <ol class="numbered risk-list" id="riskList"></ol>
+    </div>
+
+    <!-- Bull / Bear -->
+    <div class="section" id="bullbear">
+      <div class="section-title">Bull vs Bear Case</div>
+      <div class="bull-bear">
+        <div class="bull-card">
+          <div class="card-title">Bull Case</div>
+          <ul class="case-list" id="bullList"></ul>
+        </div>
+        <div class="bear-card">
+          <div class="card-title">Bear Case</div>
+          <ul class="case-list" id="bearList"></ul>
+        </div>
+      </div>
+      <div class="edge-callout" id="edgeCallout" hidden>
+        <span class="edge-label">Edge / Non-Consensus View</span>
+        <span id="edgeText"></span>
+      </div>
+    </div>
+
+    <!-- Sector Lens -->
+    <div class="section" id="lens" hidden>
+      <div class="section-title">Sector Lens</div>
+      <div class="card">
+        <div class="lens-field"><span class="lens-label">Sector classification</span><span id="lensClassification"></span></div>
+        <div class="lens-field"><span class="lens-label">TAM &amp; runway</span><span id="lensTam"></span></div>
+        <div class="lens-field"><span class="lens-label">What the current price prices in</span><span id="lensPricedIn"></span></div>
+        <div class="lens-field"><span class="lens-label">Narrative</span><span id="lensNarrative"></span></div>
+        <div class="lens-cols">
+          <div>
+            <h4>Sector metrics this quarter</h4>
+            <ul class="tight" id="lensMetrics"></ul>
+          </div>
+          <div>
+            <h4>Still-open sector questions</h4>
+            <ul class="tight" id="lensQuestions"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Metrics to Watch -->
+    <div class="section" id="watch">
+      <div class="section-title">Key Metrics to Watch (Next Earnings)</div>
+      <div class="card" id="metricsWatch"></div>
+    </div>
+
+    <!-- Kill Price & Conviction -->
+    <div class="killbar" id="killbar" hidden>
+      <h2 id="kill">Kill Price &amp; Conviction</h2>
+      <p class="field"><b>Conviction:</b> <span id="killConviction"></span></p>
+      <p class="field"><b>Kill Price:</b> <span id="killPrice"></span></p>
+      <p class="field"><b>Kill Trigger (non-price):</b> <span id="killTrigger"></span></p>
+      <p class="rationale" id="killRationale"></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Stock Research OS — Generated 2026-09-23</span>
+      <span>Data: SEC EDGAR / SET + yfinance | Agents: Claude + MiniMax M2.7</span>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── DATA (filled by generate_html.py) ──────────────────────────────────────
+const REPORT_DATA = {
+  "ticker": "HENG",
+  "company_name": "Heng Leasing and Capital Public Company Limited",
+  "sector": "Financial Services",
+  "industry": "Credit Services",
+  "market_cap": "N/A",
+  "report_date": "2026-09-23",
+  "revenue_ttm": "$1.0B",
+  "revenue_growth": "-27.2%",
+  "gross_margin": "23.6%",
+  "op_margin": "25.1%",
+  "fcf_ttm": "N/A",
+  "pe_ratio": 44.5,
+  "fwd_pe": 14.8,
+  "annual_rows": [
+    {
+      "label": "FY2026",
+      "revenue_b": 0.5,
+      "gross_margin_pct": 29.6,
+      "op_margin_pct": 26.1,
+      "net_margin_pct": 18.7,
+      "net_income_b": 0.1,
+      "fcf_b": 1.5,
+      "eps": 0.03,
+      "yoy_growth": -54.5
+    },
+    {
+      "label": "FY2025",
+      "revenue_b": 1.1,
+      "gross_margin_pct": 21.1,
+      "op_margin_pct": 15.9,
+      "net_margin_pct": 3.1,
+      "net_income_b": 0.0,
+      "fcf_b": 4.2,
+      "eps": 0.0,
+      "yoy_growth": -26.7
+    },
+    {
+      "label": "FY2024",
+      "revenue_b": 1.5,
+      "gross_margin_pct": 22.1,
+      "op_margin_pct": 14.6,
+      "net_margin_pct": 5.0,
+      "net_income_b": 0.1,
+      "fcf_b": 2.8,
+      "eps": 0.03,
+      "yoy_growth": -25.0
+    },
+    {
+      "label": "FY2023",
+      "revenue_b": 2.0,
+      "gross_margin_pct": 39.1,
+      "op_margin_pct": 42.0,
+      "net_margin_pct": 20.9,
+      "net_income_b": 0.4,
+      "fcf_b": 0.0,
+      "eps": 0.11,
+      "yoy_growth": 17.6
+    },
+    {
+      "label": "FY2022",
+      "revenue_b": 1.7,
+      "gross_margin_pct": 40.3,
+      "op_margin_pct": 42.2,
+      "net_margin_pct": 27.5,
+      "net_income_b": 0.5,
+      "fcf_b": 0.0,
+      "eps": 0.12,
+      "yoy_growth": 0
+    }
+  ],
+  "quarters": [
+    {
+      "label": "Q2 2026",
+      "revenue_b": 0.21,
+      "yoy_growth": 0,
+      "qoq_growth": 0,
+      "gross_margin_pct": 25.1,
+      "op_margin_pct": 25.1,
+      "net_margin_pct": 13.4,
+      "net_income_b": 0.03,
+      "fcf_b": 0.0,
+      "eps": 0.01
+    },
+    {
+      "label": "Q1 2026",
+      "revenue_b": 0.28,
+      "yoy_growth": 0,
+      "qoq_growth": 33.3,
+      "gross_margin_pct": 33.0,
+      "op_margin_pct": 26.8,
+      "net_margin_pct": 22.8,
+      "net_income_b": 0.06,
+      "fcf_b": 0.0,
+      "eps": 0.02
+    },
+    {
+      "label": "Q4 2025",
+      "revenue_b": 0.21,
+      "yoy_growth": 0,
+      "qoq_growth": -25.0,
+      "gross_margin_pct": 11.7,
+      "op_margin_pct": -2.5,
+      "net_margin_pct": -17.7,
+      "net_income_b": -0.04,
+      "fcf_b": 0.0,
+      "eps": -0.01
+    },
+    {
+      "label": "Q3 2025",
+      "revenue_b": 0.27,
+      "yoy_growth": 0,
+      "qoq_growth": 28.6,
+      "gross_margin_pct": 21.8,
+      "op_margin_pct": 21.8,
+      "net_margin_pct": 2.3,
+      "net_income_b": 0.01,
+      "fcf_b": 0.0,
+      "eps": 0.0
+    },
+    {
+      "label": "Q2 2025",
+      "revenue_b": 0.29,
+      "yoy_growth": 0,
+      "qoq_growth": 7.4,
+      "gross_margin_pct": 17.9,
+      "op_margin_pct": 17.9,
+      "net_margin_pct": 4.3,
+      "net_income_b": 0.01,
+      "fcf_b": 0.0,
+      "eps": 0.0
+    },
+    {
+      "label": "Q1 2025",
+      "revenue_b": 0.35,
+      "yoy_growth": 0,
+      "qoq_growth": 20.7,
+      "gross_margin_pct": 29.0,
+      "op_margin_pct": 20.8,
+      "net_margin_pct": 15.1,
+      "net_income_b": 0.05,
+      "fcf_b": 0.0,
+      "eps": 0.01
+    },
+    {
+      "label": "Q4 2024",
+      "revenue_b": 0.35,
+      "yoy_growth": 0,
+      "qoq_growth": 0.0,
+      "gross_margin_pct": 33.0,
+      "op_margin_pct": 20.9,
+      "net_margin_pct": 17.0,
+      "net_income_b": 0.06,
+      "fcf_b": 0.0,
+      "eps": 0.02
+    },
+    {
+      "label": "Q3 2024",
+      "revenue_b": 0.37,
+      "yoy_growth": 0,
+      "qoq_growth": 5.7,
+      "gross_margin_pct": 23.9,
+      "op_margin_pct": 23.9,
+      "net_margin_pct": 5.2,
+      "net_income_b": 0.02,
+      "fcf_b": 0.0,
+      "eps": 0.01
+    }
+  ],
+  "guidance": [
+    {
+      "period": "\u0e17\u0e38\u0e01\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a",
+      "metric": "\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 (Revenue)",
+      "guidance": "\u0e44\u0e21\u0e48\u0e21\u0e35",
+      "actual": "\u2014",
+      "result": "N/A"
+    },
+    {
+      "period": "\u0e17\u0e38\u0e01\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a",
+      "metric": "\u0e01\u0e33\u0e44\u0e23\u0e15\u0e48\u0e2d\u0e2b\u0e38\u0e49\u0e19 (EPS)",
+      "guidance": "\u0e44\u0e21\u0e48\u0e21\u0e35",
+      "actual": "\u2014",
+      "result": "N/A"
+    },
+    {
+      "period": "Q3 2026",
+      "metric": "\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 (Revenue)",
+      "guidance": "\u0e44\u0e21\u0e48\u0e21\u0e35",
+      "actual": "TBD",
+      "result": "\u2014"
+    },
+    {
+      "period": "Q3 2026",
+      "metric": "\u0e01\u0e33\u0e44\u0e23\u0e15\u0e48\u0e2d\u0e2b\u0e38\u0e49\u0e19 (EPS)",
+      "guidance": "\u0e44\u0e21\u0e48\u0e21\u0e35",
+      "actual": "TBD",
+      "result": "\u2014"
+    }
+  ],
+  "bull_case": [
+    "<strong>Scenario:</strong> Provision normalize \u0e17\u0e35\u0e48 25\u201330%; loan book \u0e02\u0e22\u0e32\u0e22\u0e1a\u0e19\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e15\u0e49\u0e19\u0e17\u0e38\u0e19\u0e15\u0e48\u0e33\u0e25\u0e07; refinancing \u0e40\u0e2a\u0e23\u0e47\u0e08\u0e17\u0e35\u0e48 spread \u0e15\u0e48\u0e33",
+    "<strong>Key assumption:</strong> Q4 2025 \u0e40\u0e1b\u0e47\u0e19 batch write-off cleanup; \u0e2a\u0e32\u0e02\u0e32 450 \u0e17\u0e35\u0e48\u0e40\u0e2b\u0e25\u0e37\u0e2d profitable; NIM \u0e02\u0e2d\u0e07 origination \u0e43\u0e2b\u0e21\u0e48\u0e17\u0e33\u0e01\u0e33\u0e44\u0e23\u0e44\u0e14\u0e49",
+    "<strong>Price implication:</strong> NI normalize \u0e3f150\u2013220M/\u0e1b\u0e35; P/B re-rates 1.0\u00d7 = \u0e3f1.32/\u0e2b\u0e38\u0e49\u0e19 (+48%)",
+    "<strong>\u0e04\u0e27\u0e32\u0e21\u0e19\u0e48\u0e32\u0e08\u0e30\u0e40\u0e1b\u0e47\u0e19 (Probability):</strong> 25\u201330%"
+  ],
+  "bear_case": [
+    "<strong>Scenario:</strong> \u0e27\u0e07\u0e08\u0e23 NPL \u0e40\u0e01\u0e34\u0e14\u0e0b\u0e49\u0e33; denominator squeeze \u0e14\u0e31\u0e19 gross income \u0e0a\u0e19 cost-floor; refinancing \u0e23\u0e32\u0e04\u0e32\u0e41\u0e1e\u0e07",
+    "<strong>Key assumption:</strong> \u0e25\u0e39\u0e01\u0e2b\u0e19\u0e35\u0e49\u0e17\u0e35\u0e48\u0e14\u0e35\u0e0a\u0e33\u0e23\u0e30\u0e2b\u0e19\u0e35\u0e49\u0e44\u0e1b\u0e41\u0e25\u0e49\u0e27; pool \u0e17\u0e35\u0e48\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e04\u0e38\u0e13\u0e20\u0e32\u0e1e\u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32; origination \u0e43\u0e2b\u0e21\u0e48\u0e2a\u0e23\u0e49\u0e32\u0e07 NPL \u0e23\u0e2d\u0e1a\u0e15\u0e48\u0e2d\u0e44\u0e1b\u0e43\u0e19 6\u201312 \u0e40\u0e14\u0e37\u0e2d\u0e19",
+    "<strong>Price implication:</strong> Forward NI \u0e3f80\u2013160M; 8\u201310\u00d7 P/E = \u0e3f0.17\u20130.42/\u0e2b\u0e38\u0e49\u0e19 (\u221253% \u0e16\u0e36\u0e07 \u221281%)",
+    "<strong>\u0e04\u0e27\u0e32\u0e21\u0e19\u0e48\u0e32\u0e08\u0e30\u0e40\u0e1b\u0e47\u0e19 (Probability):</strong> 55\u201365%"
+  ],
+  "key_metrics": [],
+  "lynch": {
+    "category": "Turnaround",
+    "why": "",
+    "implication": "- TTM PE 44.5\u00d7 \u0e2a\u0e30\u0e17\u0e49\u0e2d\u0e19\u0e01\u0e33\u0e44\u0e23 trough \u2014 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 fair value; forward PE 14.8\u00d7 \u0e21\u0e35\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e21\u0e32\u0e22\u0e21\u0e32\u0e01\u0e01\u0e27\u0e48\u0e32 \u0e41\u0e15\u0e48\u0e02\u0e36\u0e49\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e01\u0e31\u0e1a\u0e27\u0e48\u0e32 provision \u0e08\u0e30 normalize \u0e08\u0e23\u0e34\u0e07\n- Turnaround thesis \u0e15\u0e49\u0e2d\u0e07\u0e21\u0e35 \"catalyst \u0e40\u0e09\u0e1e\u0e32\u0e30\" \u0e17\u0e35\u0e48 confirmed \u0e01\u0e48\u0e2d\u0e19\u0e25\u0e07\u0e17\u0e38\u0e19 \u2014 \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35 explicit catalyst (\u0e44\u0e21\u0e48\u0e21\u0e35 guidance, provision volatile, loan book \u0e22\u0e31\u0e07\u0e2b\u0e14)\n- Risk/reward \u0e44\u0e21\u0e48\u0e2a\u0e21\u0e21\u0e32\u0e15\u0e23: upside \u0e16\u0e49\u0e32 normalize \u0e2a\u0e39\u0e07; downside \u0e16\u0e49\u0e32 provision \u0e2b\u0e32\u0e07\u0e22\u0e32\u0e27 = equity value \u0e01\u0e31\u0e14\u0e40\u0e0b\u0e32\u0e30\u0e15\u0e48\u0e2d\n\n---"
+  },
+  "exec_summary_html": "<p>)</p><p>\u0e40\u0e2e\u0e07 \u0e25\u0e34\u0e2a\u0e0b\u0e34\u0e48\u0e07 \u0e41\u0e2d\u0e19\u0e14\u0e4c \u0e41\u0e04\u0e1b\u0e1b\u0e34\u0e15\u0e2d\u0e25 (\u0e01\u0e48\u0e2d\u0e15\u0e31\u0e49\u0e07 2558, \u0e2a\u0e33\u0e19\u0e31\u0e01\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e0d\u0e48 \u0e2a\u0e31\u0e19\u0e17\u0e23\u0e32\u0e22 \u0e40\u0e0a\u0e35\u0e22\u0e07\u0e43\u0e2b\u0e21\u0e48) \u0e40\u0e1b\u0e47\u0e19\u0e1c\u0e39\u0e49\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e18\u0e19\u0e32\u0e04\u0e32\u0e23 (non-bank) \u0e40\u0e1e\u0e35\u0e22\u0e07 segment \u0e40\u0e14\u0e35\u0e22\u0e27 \u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a\u0e14\u0e49\u0e27\u0e22 \u0e40\u0e0a\u0e48\u0e32\u0e0b\u0e37\u0e49\u0e2d\u0e22\u0e32\u0e19\u0e1e\u0e32\u0e2b\u0e19\u0e30 \u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e23\u0e16 \u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e17\u0e35\u0e48\u0e14\u0e34\u0e19\u0e41\u0e25\u0e30\u0e2a\u0e34\u0e48\u0e07\u0e1b\u0e25\u0e39\u0e01\u0e2a\u0e23\u0e49\u0e32\u0e07 \u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e2a\u0e48\u0e27\u0e19\u0e1a\u0e38\u0e04\u0e04\u0e25 (Personal Loan) \u0e19\u0e32\u0e42\u0e19\u0e44\u0e1f\u0e41\u0e19\u0e19\u0e0b\u0e4c (Nano Finance) \u0e41\u0e25\u0e30\u0e19\u0e32\u0e22\u0e2b\u0e19\u0e49\u0e32\u0e1b\u0e23\u0e30\u0e01\u0e31\u0e19\u0e20\u0e31\u0e22 \u0e42\u0e14\u0e22\u0e43\u0e2b\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e01\u0e25\u0e38\u0e48\u0e21\u0e10\u0e32\u0e19\u0e23\u0e32\u0e01\u0e41\u0e25\u0e30\u0e0a\u0e31\u0e49\u0e19\u0e01\u0e25\u0e32\u0e07\u0e25\u0e48\u0e32\u0e07\u0e43\u0e19\u0e20\u0e32\u0e04\u0e40\u0e2b\u0e19\u0e37\u0e2d\u0e40\u0e1b\u0e47\u0e19\u0e2b\u0e25\u0e31\u0e01 \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 (Revenue) \u0e2b\u0e14\u0e15\u0e31\u0e27\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07 8 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a (\u0e08\u0e32\u0e01\u0e08\u0e38\u0e14\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 FY2023 \u0e17\u0e35\u0e48 \u0e3f2,023M \u0e40\u0e2b\u0e25\u0e37\u0e2d \u0e3f974M annualised \u0e43\u0e19 H1 2026) \u0e1c\u0e25\u0e08\u0e32\u0e01\u0e01\u0e32\u0e23 run-off portfolio \u0e15\u0e31\u0e49\u0e07\u0e43\u0e08\u0e41\u0e25\u0e30\u0e2a\u0e33\u0e23\u0e2d\u0e07\u0e2b\u0e19\u0e35\u0e49\u0e2a\u0e39\u0e07 \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e02\u0e32\u0e14\u0e17\u0e38\u0e19\u0e2a\u0e38\u0e17\u0e18\u0e34\u0e17\u0e31\u0e49\u0e07\u0e43\u0e19 Q2 2024 (\u2212\u0e3f28.6M) \u0e41\u0e25\u0e30 Q4 2025 (\u2212\u0e3f37.1M) \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e2a\u0e2d\u0e07\u0e23\u0e2d\u0e1a\u0e02\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e40\u0e2a\u0e37\u0e48\u0e2d\u0e21\u0e04\u0e38\u0e13\u0e20\u0e32\u0e1e\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d (credit deterioration) \u0e41\u0e17\u0e19\u0e17\u0e35\u0e48\u0e08\u0e30\u0e40\u0e1b\u0e47\u0e19\u0e08\u0e38\u0e14\u0e15\u0e48\u0e33\u0e2a\u0e38\u0e14 (trough) \u0e23\u0e2d\u0e1a\u0e40\u0e14\u0e35\u0e22\u0e27 \u0e1b\u0e23\u0e30\u0e40\u0e14\u0e47\u0e19\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14: \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e2a\u0e48\u0e27\u0e19 P/E \u0e25\u0e48\u0e27\u0e07\u0e2b\u0e19\u0e49\u0e32 (Forward P/E) \u0e17\u0e35\u0e48 14.8\u00d7 \u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23 provision rate \u0e25\u0e14\u0e25\u0e07\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e1a\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22 (gross interest income) \u0e1f\u0e37\u0e49\u0e19\u0e15\u0e31\u0e27\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19 \u0e0b\u0e36\u0e48\u0e07 \u0e13 Q2 2026 \u0e17\u0e31\u0e49\u0e07\u0e2a\u0e2d\u0e07\u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e22\u0e31\u0e07\u0e25\u0e49\u0e21\u0e40\u0e2b\u0e25\u0e27\u0e2d\u0e22\u0e39\u0e48 \u0e43\u0e19\u0e10\u0e32\u0e19\u0e30\u0e2b\u0e38\u0e49\u0e19 <strong>Turnaround</strong> \u0e04\u0e48\u0e32 P/E \u0e1b\u0e01\u0e15\u0e34\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e08\u0e38\u0e14\u0e22\u0e36\u0e14\u0e17\u0e35\u0e48\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e16\u0e37\u0e2d\u0e44\u0e14\u0e49 \u0e04\u0e33\u0e16\u0e32\u0e21\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e04\u0e37\u0e2d \u0e27\u0e07\u0e08\u0e23\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e40\u0e2a\u0e35\u0e22\u0e16\u0e36\u0e07\u0e08\u0e38\u0e14\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14\u0e41\u0e25\u0e49\u0e27\u0e08\u0e23\u0e34\u0e07\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48 \u0e41\u0e25\u0e30\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e08\u0e30 rebuild loan book \u0e44\u0e14\u0e49\u0e01\u0e48\u0e2d\u0e19\u0e17\u0e35\u0e48\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e15\u0e49\u0e19\u0e17\u0e38\u0e19\u0e08\u0e30\u0e01\u0e31\u0e14\u0e01\u0e23\u0e48\u0e2d\u0e19 equity \u0e17\u0e35\u0e48\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e2d\u0e22\u0e39\u0e48 \u2014 \u0e1c\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a\u0e01\u0e32\u0e23 (Earnings) Q3 2026 (\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19 \u0e1e.\u0e22. 2569) \u0e04\u0e37\u0e2d\u0e01\u0e32\u0e23\u0e17\u0e14\u0e2a\u0e2d\u0e1a\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e41\u0e23\u0e01</p><p>---</p>",
+  "growth_html": "<ol><li><strong>Deleverage \u0e40\u0e2a\u0e23\u0e47\u0e08\u0e2a\u0e21\u0e1a\u0e39\u0e23\u0e13\u0e4c \u2014 \u0e04\u0e27\u0e32\u0e21\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e43\u0e19\u0e01\u0e32\u0e23\u0e01\u0e39\u0e49\u0e04\u0e37\u0e19:</strong> D/E \u0e25\u0e14\u0e08\u0e32\u0e01 peak 1.84\u00d7 (FY2023) \u0e40\u0e2b\u0e25\u0e37\u0e2d 0.53\u00d7 (Q2 2026) \u0e07\u0e1a\u0e14\u0e38\u0e25\u0e2a\u0e30\u0e2d\u0e32\u0e14\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e23\u0e2d\u0e1a 5 \u0e1b\u0e35 \u0e17\u0e32\u0e07\u0e17\u0e24\u0e29\u0e0e\u0e35\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2b\u0e19\u0e35\u0e49\u0e44\u0e14\u0e49\u0e2d\u0e35\u0e01 \u0e3f2,500\u20135,000M \u0e01\u0e48\u0e2d\u0e19\u0e0a\u0e19\u0e40\u0e1e\u0e14\u0e32\u0e19 D/E 1.0\u20131.5\u00d7 [est. \u2014 threshold \u0e15\u0e32\u0e21 covenant \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e08\u0e32\u0e01\u0e41\u0e2b\u0e25\u0e48\u0e07\u0e1b\u0e10\u0e21\u0e20\u0e39\u0e21\u0e34] \u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e17\u0e38\u0e19</li><li><strong>\u0e01\u0e32\u0e23 normalize provision = leverage \u0e01\u0e33\u0e44\u0e23\u0e17\u0e23\u0e07\u0e1e\u0e25\u0e31\u0e07:</strong> \u0e2b\u0e32\u0e01 provision rate \u0e25\u0e07\u0e2a\u0e39\u0e48 25\u201330% \u0e02\u0e2d\u0e07 revenue-before-provision (\u0e40\u0e17\u0e35\u0e22\u0e1a\u0e01\u0e31\u0e1a 41.2% \u0e43\u0e19 Q2 2026) \u0e01\u0e33\u0e44\u0e23\u0e2a\u0e38\u0e17\u0e18\u0e34 (Net Income) \u0e17\u0e35\u0e48 normalize \u0e2d\u0e32\u0e08\u0e01\u0e25\u0e31\u0e1a\u0e21\u0e32\u0e17\u0e35\u0e48 \u0e3f150\u2013220M/\u0e1b\u0e35 \u0e1a\u0e19 loan book \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 \u2014 \u0e40\u0e1e\u0e34\u0e48\u0e21 2.5\u20133.7\u00d7 \u0e08\u0e32\u0e01 TTM NI \u0e08\u0e23\u0e34\u0e07 ~\u0e3f60M \u0e15\u0e31\u0e27\u0e41\u0e1b\u0e23\u0e40\u0e14\u0e35\u0e22\u0e27\u0e19\u0e35\u0e49\u0e02\u0e31\u0e1a\u0e40\u0e04\u0e25\u0e37\u0e48\u0e2d\u0e19 bull case \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14</li><li><strong>\u0e15\u0e49\u0e19\u0e17\u0e38\u0e19 (Fixed Cost) \u0e25\u0e14\u0e16\u0e32\u0e27\u0e23\u0e08\u0e32\u0e01\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e31\u0e1a\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e2a\u0e32\u0e02\u0e32:</strong> \u0e08\u0e33\u0e19\u0e27\u0e19\u0e2a\u0e32\u0e02\u0e32\u0e25\u0e14\u0e08\u0e32\u0e01\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 743 \u0e40\u0e2b\u0e25\u0e37\u0e2d 450 \u0e41\u0e2b\u0e48\u0e07 (\u221239%) \u0e43\u0e19 H1 2026 <span class=\"badge est\">est.</span> Cost of services \u0e25\u0e14\u0e08\u0e32\u0e01 ~\u0e3f237M/Q (Q2 2025) \u0e40\u0e2b\u0e25\u0e37\u0e2d ~\u0e3f157M/Q (Q2 2026) \u0e1b\u0e23\u0e30\u0e2b\u0e22\u0e31\u0e14\u0e44\u0e14\u0e49\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 \u0e3f300\u2013400M/\u0e1b\u0e35 <span class=\"badge est\">est.</span> \u0e2b\u0e32\u0e01\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e15\u0e49\u0e19\u0e17\u0e38\u0e19\u0e43\u0e2b\u0e21\u0e48\u0e04\u0e07\u0e2d\u0e22\u0e39\u0e48\u0e16\u0e32\u0e27\u0e23</li><li><strong>\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22\u0e08\u0e48\u0e32\u0e22 (Interest Expense) \u0e25\u0e14\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e21\u0e35\u0e19\u0e31\u0e22\u0e2a\u0e33\u0e04\u0e31\u0e0d:</strong> \u0e04\u0e48\u0e32\u0e43\u0e0a\u0e49\u0e08\u0e48\u0e32\u0e22\u0e17\u0e32\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19\u0e25\u0e14\u0e08\u0e32\u0e01 \u0e3f137M/Q (Q3 2024) \u0e40\u0e2b\u0e25\u0e37\u0e2d \u0e3f37.6M/Q (Q2 2026) \u0e25\u0e14\u0e25\u0e07 73% \u0e40\u0e1b\u0e47\u0e19\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e38\u0e07\u0e15\u0e49\u0e19\u0e17\u0e38\u0e19\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14\u0e08\u0e23\u0e34\u0e07\u0e17\u0e35\u0e48\u0e02\u0e22\u0e32\u0e22 margin \u0e17\u0e35\u0e48\u0e40\u0e1b\u0e47\u0e19\u0e44\u0e1b\u0e44\u0e14\u0e49\u0e02\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e1b\u0e25\u0e48\u0e2d\u0e22\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e43\u0e2b\u0e21\u0e48</li><li><strong>Insurance brokerage \u0e43\u0e2b\u0e49 fee income \u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e2d\u0e22\u0e39\u0e48:</strong> \u0e04\u0e48\u0e32\u0e18\u0e23\u0e23\u0e21\u0e40\u0e19\u0e35\u0e22\u0e21\u0e19\u0e32\u0e22\u0e2b\u0e19\u0e49\u0e32 + fees + \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e2d\u0e37\u0e48\u0e19 \u0e23\u0e27\u0e21 ~\u0e3f24.9M/Q \u0e43\u0e19 Q2 2026 \u0e40\u0e1b\u0e47\u0e19 stream \u0e17\u0e35\u0e48\u0e21\u0e35 margin \u0e2a\u0e39\u0e07\u0e01\u0e27\u0e48\u0e32\u0e41\u0e25\u0e30\u0e41\u0e22\u0e01\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19\u0e08\u0e32\u0e01\u0e02\u0e19\u0e32\u0e14 loan book \u0e16\u0e49\u0e32 attach rate \u0e04\u0e07\u0e17\u0e35\u0e48 fee income \u0e08\u0e30\u0e1f\u0e37\u0e49\u0e19\u0e15\u0e31\u0e27\u0e01\u0e48\u0e2d\u0e19 net interest income \u0e40\u0e21\u0e37\u0e48\u0e2d\u0e01\u0e32\u0e23\u0e1b\u0e25\u0e48\u0e2d\u0e22\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e43\u0e2b\u0e21\u0e48\u0e40\u0e23\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19</li></ol>",
+  "risks_html": "<ol><li><strong>\u0e27\u0e07\u0e08\u0e23 NPL \u0e17\u0e35\u0e48\u0e40\u0e01\u0e34\u0e14\u0e0b\u0e49\u0e33 \u2014 \u0e2a\u0e2d\u0e07\u0e23\u0e2d\u0e1a\u0e41\u0e25\u0e49\u0e27 \u0e23\u0e2d\u0e1a\u0e2a\u0e32\u0e21\u0e01\u0e33\u0e25\u0e31\u0e07\u0e08\u0e30\u0e21\u0e32:</strong> NI Q2 2024 = \u2212\u0e3f28.6M \u0e41\u0e25\u0e30 Q4 2025 = \u2212\u0e3f37.1M \u0e41\u0e2a\u0e14\u0e07\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a\u0e01\u0e32\u0e23\u0e40\u0e2a\u0e37\u0e48\u0e2d\u0e21\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e17\u0e35\u0e48\u0e40\u0e01\u0e34\u0e14\u0e0b\u0e49\u0e33 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 trough \u0e23\u0e2d\u0e1a\u0e40\u0e14\u0e35\u0e22\u0e27 Provision Q2 2026 \u0e01\u0e23\u0e30\u0e42\u0e14\u0e14\u0e01\u0e25\u0e31\u0e1a 63% QoQ \u0e40\u0e1b\u0e47\u0e19 \u0e3f147M (41.2% \u0e02\u0e2d\u0e07 revenue-before-provision) \u0e2b\u0e25\u0e31\u0e07\u0e1f\u0e37\u0e49\u0e19\u0e15\u0e31\u0e27\u0e40\u0e1e\u0e35\u0e22\u0e07\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e40\u0e14\u0e35\u0e22\u0e27 \u0e17\u0e35\u0e48 gross interest income \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 ~\u0e3f370M/Q \u0e41\u0e21\u0e49 provision rate \"\u0e1b\u0e01\u0e15\u0e34\" \u0e17\u0e35\u0e48 40% \u0e01\u0e47\u0e17\u0e33\u0e43\u0e2b\u0e49 net revenue \u0e41\u0e17\u0e1a\u0e0a\u0e19 cost of services \u0e3f157M \u2014 \u0e43\u0e01\u0e25\u0e49\u0e02\u0e32\u0e14\u0e17\u0e38\u0e19\u0e08\u0e32\u0e01\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e07\u0e32\u0e19 (operating loss)</li><li><strong>\u0e2b\u0e19\u0e35\u0e49 \u0e3f1,928M \u0e17\u0e35\u0e48\u0e04\u0e23\u0e1a\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e43\u0e19 12 \u0e40\u0e14\u0e37\u0e2d\u0e19 \u0e04\u0e37\u0e2d survival event \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e41\u0e04\u0e48 growth constraint:</strong> Current-portion LTD = \u0e3f1,928M \u0e04\u0e23\u0e1a\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e43\u0e19 12 \u0e40\u0e14\u0e37\u0e2d\u0e19 \u0e40\u0e17\u0e35\u0e22\u0e1a\u0e01\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e14 \u0e3f32.7M \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e15\u0e49\u0e2d\u0e07 refinance \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e2d\u0e22\u0e39\u0e48\u0e23\u0e2d\u0e14 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e41\u0e04\u0e48\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e42\u0e15 \u0e17\u0e35\u0e48 +200bps \u0e40\u0e2b\u0e19\u0e37\u0e2d legacy rate \u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22\u0e40\u0e1e\u0e34\u0e48\u0e21 ~\u0e3f38M/\u0e1b\u0e35 \u0e17\u0e35\u0e48 +400bps \u2248 \u0e3f77M \u2014 \u0e40\u0e17\u0e48\u0e32\u0e01\u0e31\u0e1a net income \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e02\u0e2d\u0e07 H1 2026 \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e01\u0e32\u0e23\u0e40\u0e08\u0e23\u0e08\u0e32\u0e40\u0e2b\u0e25\u0e48\u0e32\u0e19\u0e35\u0e49\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34 operating loss Q4 2025 \u0e41\u0e25\u0e30 NI FY2025 \u0e40\u0e1e\u0e35\u0e22\u0e07 \u0e3f34M</li><li><strong>Forward P/E \u0e2a\u0e21\u0e21\u0e15\u0e34\u0e10\u0e32\u0e19\u0e04\u0e39\u0e48 \u2014 \u0e17\u0e31\u0e49\u0e07\u0e2a\u0e2d\u0e07\u0e25\u0e49\u0e21\u0e40\u0e2b\u0e25\u0e27\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19:</strong> Forward P/E 14.8\u00d7 \u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23 provision \u226430% AND gross income \u0e44\u0e21\u0e48\u0e25\u0e14 \u0e13 Q2 2026 \u0e17\u0e31\u0e49\u0e07\u0e2a\u0e2d\u0e07\u0e01\u0e33\u0e25\u0e31\u0e07\u0e25\u0e49\u0e21\u0e40\u0e2b\u0e25\u0e27\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19 \u0e2b\u0e32\u0e01 forward NI \u0e08\u0e23\u0e34\u0e07\u0e2d\u0e2d\u0e01\u0e21\u0e32 \u0e3f80\u2013160M \u0e41\u0e25\u0e30\u0e15\u0e25\u0e32\u0e14\u0e43\u0e2b\u0e49 8\u201310\u00d7 P/E \u0e01\u0e31\u0e1a lender \u0e17\u0e35\u0e48 ROIC \u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 1% \u0e41\u0e25\u0e30 asset base \u0e2b\u0e14\u0e15\u0e31\u0e27 fair value = \u0e3f0.17\u20130.42/\u0e2b\u0e38\u0e49\u0e19 (\u221253% \u0e16\u0e36\u0e07 \u221281%)</li><li><strong>\u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e2a\u0e23\u0e23\u0e40\u0e07\u0e34\u0e19\u0e17\u0e38\u0e19 (Capital Allocation) \u0e1a\u0e48\u0e07\u0e0a\u0e35\u0e49 harvest mode \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 turnaround:</strong> \u0e40\u0e07\u0e34\u0e19\u0e1b\u0e31\u0e19\u0e1c\u0e25 (Dividend) FY2025 \u0e3f200M = 588% \u0e02\u0e2d\u0e07 NI \u0e3f34M; FY2024 = 347%; FY2026 H1 ~110% \u0e2a\u0e32\u0e21\u0e1b\u0e35\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e02\u0e2d\u0e07 payout \u0e40\u0e01\u0e34\u0e19 NI \u0e14\u0e36\u0e07\u0e40\u0e07\u0e34\u0e19\u0e17\u0e38\u0e19\u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e43\u0e19\u0e02\u0e13\u0e30\u0e17\u0e35\u0e48 thesis \u0e1a\u0e2d\u0e01\u0e27\u0e48\u0e32\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19\u0e17\u0e38\u0e19\u0e40\u0e1e\u0e37\u0e48\u0e2d re-growth \u0e17\u0e31\u0e49\u0e07\u0e2a\u0e2d\u0e07\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e1b\u0e47\u0e19\u0e08\u0e23\u0e34\u0e07\u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e19</li><li><strong>\u0e2a\u0e16\u0e32\u0e19\u0e30 Covenant \u0e13 Q4 2025 \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19:</strong> EBIT = \u2212\u0e3f5.3M \u0e43\u0e19 Q4 2025 \u2192 EBIT/interest coverage < 0 \u0e43\u0e01\u0e25\u0e49 breach \u0e17\u0e38\u0e01 covenant \u0e21\u0e32\u0e15\u0e23\u0e10\u0e32\u0e19 \u0e44\u0e21\u0e48\u0e17\u0e23\u0e32\u0e1a\u0e27\u0e48\u0e32\u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a waiver \u0e08\u0e32\u0e01\u0e1c\u0e39\u0e49\u0e16\u0e37\u0e2d\u0e2b\u0e38\u0e49\u0e19\u0e01\u0e39\u0e49/\u0e18\u0e19\u0e32\u0e04\u0e32\u0e23\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48 <span class=\"badge unverified\">unverified</span> \u0e16\u0e49\u0e32\u0e21\u0e35\u0e01\u0e32\u0e23 breach \u0e41\u0e15\u0e48\u0e44\u0e21\u0e48\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22\u0e2d\u0e32\u0e08\u0e40\u0e1b\u0e47\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e14\u0e47\u0e19 governance \u0e2a\u0e33\u0e04\u0e31\u0e0d</li></ol>",
+  "edge_html": "Market consensus \u0e17\u0e35\u0e48\u0e2a\u0e30\u0e17\u0e49\u0e2d\u0e19\u0e43\u0e19 forward P/E 14.8\u00d7 \u0e21\u0e2d\u0e07\u0e27\u0e48\u0e32 provision spike \u0e40\u0e1b\u0e47\u0e19 one-time cleanup \u0e41\u0e25\u0e30 D/E \u0e15\u0e48\u0e33\u0e40\u0e1b\u0e47\u0e19 dry powder \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a re-growth \u0e21\u0e38\u0e21\u0e21\u0e2d\u0e07\u0e17\u0e35\u0e48\u0e40\u0e23\u0e32\u0e40\u0e2b\u0e47\u0e19\u0e15\u0e48\u0e32\u0e07\u0e21\u0e35\u0e2a\u0e32\u0e21\u0e08\u0e38\u0e14: (1) OCF yield 111% \u0e02\u0e2d\u0e07 market cap \u0e40\u0e1b\u0e47\u0e19 loan-runoff artefact \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 value signal \u2014 \u0e19\u0e31\u0e01\u0e25\u0e07\u0e17\u0e38\u0e19\u0e17\u0e35\u0e48\u0e22\u0e36\u0e14 OCF \u0e08\u0e30\u0e15\u0e01\u0e43\u0e08\u0e40\u0e21\u0e37\u0e48\u0e2d origination \u0e02\u0e36\u0e49\u0e19\u0e41\u0e25\u0e30 OCF \u0e1e\u0e25\u0e34\u0e01\u0e40\u0e1b\u0e47\u0e19\u0e25\u0e1a; (2) provision \u0e01\u0e23\u0e30\u0e42\u0e14\u0e14\u0e01\u0e25\u0e31\u0e1a\u0e40\u0e1b\u0e47\u0e19 41.2% \u0e43\u0e19 Q2 2026 \u0e2b\u0e25\u0e31\u0e07\u0e1f\u0e37\u0e49\u0e19\u0e15\u0e31\u0e27\u0e40\u0e1e\u0e35\u0e22\u0e07\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e40\u0e14\u0e35\u0e22\u0e27\u0e1a\u0e48\u0e07\u0e0a\u0e35\u0e49\u0e27\u0e48\u0e32\u0e40\u0e1b\u0e47\u0e19 recurring cycle \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 trough; (3) \u0e2a\u0e32\u0e21\u0e1b\u0e35\u0e02\u0e2d\u0e07 payout \u0e40\u0e01\u0e34\u0e19 NI \u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22 harvest mode \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19 \u0e41\u0e25\u0e30\u0e16\u0e49\u0e32 management \u0e08\u0e30 pivot \u0e21\u0e32 re-growth \u0e01\u0e32\u0e23\u0e15\u0e31\u0e14\u0e1b\u0e31\u0e19\u0e1c\u0e25\u0e08\u0e30\u0e17\u0e33\u0e43\u0e2b\u0e49 retail \u0e02\u0e32\u0e22\u0e17\u0e31\u0e19\u0e17\u0e35 \u0e40\u0e23\u0e32\u0e08\u0e30\u0e23\u0e39\u0e49\u0e27\u0e48\u0e32\u0e43\u0e04\u0e23\u0e16\u0e39\u0e01\u0e40\u0e21\u0e37\u0e48\u0e2d Q3 2026 \u0e23\u0e32\u0e22\u0e07\u0e32\u0e19 \u0e1e.\u0e22. 2569 --- ### \u0e40\u0e25\u0e19\u0e2a\u0e4c\u0e2d\u0e38\u0e15\u0e2a\u0e32\u0e2b\u0e01\u0e23\u0e23\u0e21 (Sector Lens)",
+  "sector_lens": {
+    "classification": "\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d-Leasing (non-bank) \u2014 \u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e18\u0e38\u0e23\u0e01\u0e34\u0e08 100% \u0e43\u0e19 segment \u0e40\u0e14\u0e35\u0e22\u0e27 \u0e40\u0e0a\u0e48\u0e32\u0e0b\u0e37\u0e49\u0e2d + \u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e23\u0e16 + \u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e2a\u0e48\u0e27\u0e19\u0e1a\u0e38\u0e04\u0e04\u0e25 + \u0e19\u0e32\u0e42\u0e19\u0e44\u0e1f\u0e41\u0e19\u0e19\u0e0b\u0e4c",
+    "tam": "\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d non-bank \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e40\u0e0a\u0e48\u0e32\u0e0b\u0e37\u0e49\u0e2d + \u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e23\u0e16\u0e43\u0e19\u0e44\u0e17\u0e22 \u2248 \u0e3f300,000\u2013400,000M <span class=\"badge est\">est.</span> \u2014 verify \u0e01\u0e31\u0e1a \u0e18\u0e1b\u0e17. Supervisory Statistics (Non-Bank) \u0e27\u0e34\u0e18\u0e35 top-down: \u0e22\u0e2d\u0e14\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e04\u0e07\u0e04\u0e49\u0e32\u0e07 non-bank FI \u0e17\u0e31\u0e49\u0e07\u0e23\u0e30\u0e1a\u0e1a \u00d7 \u0e2a\u0e31\u0e14\u0e2a\u0e48\u0e27\u0e19 hire-purchase + vehicle-title CAGR ~3\u20135%/\u0e1b\u0e35 <span class=\"badge est\">est.</span> \u0e16\u0e39\u0e01\u0e01\u0e14\u0e42\u0e14\u0e22\u0e2b\u0e19\u0e35\u0e49\u0e04\u0e23\u0e31\u0e27\u0e40\u0e23\u0e37\u0e2d\u0e19\u0e44\u0e17\u0e22 ~90% \u0e02\u0e2d\u0e07 GDP \u0e2a\u0e48\u0e27\u0e19\u0e41\u0e1a\u0e48\u0e07\u0e15\u0e25\u0e32\u0e14 HENG \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19: ~1.5\u20132% <span class=\"badge est\">est.</span> \u0e25\u0e14\u0e08\u0e32\u0e01 peak ~3.5\u20135% (portfolio \u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 FY2023 ~\u0e3f13,000\u201315,000M) runway \u0e17\u0e32\u0e07\u0e17\u0e24\u0e29\u0e0e\u0e35 10\u201320\u00d7 \u0e01\u0e48\u0e2d\u0e19\u0e0a\u0e19\u0e40\u0e1e\u0e14\u0e32\u0e19 TAM \u2014 \u0e41\u0e15\u0e48\u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 HENG \u0e01\u0e33\u0e25\u0e31\u0e07 shrink \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e42\u0e15 \u2014 verify \u0e14\u0e49\u0e27\u0e22 screener",
+    "priced_in": "\u0e17\u0e35\u0e48\u0e23\u0e32\u0e04\u0e32 \u0e3f0.89 \u0e1a\u0e19 TTM NI \u0e08\u0e23\u0e34\u0e07 ~\u0e3f60M \u0e2b\u0e38\u0e49\u0e19\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22\u0e17\u0e35\u0e48 ~56\u00d7 TTM P/E; forward P/E 14.8\u00d7 \u0e2b\u0e21\u0e32\u0e22\u0e04\u0e27\u0e32\u0e21\u0e27\u0e48\u0e32\u0e15\u0e25\u0e32\u0e14 price in \u0e01\u0e32\u0e23\u0e1f\u0e37\u0e49\u0e19\u0e15\u0e31\u0e27\u0e02\u0e2d\u0e07 NI \u0e44\u0e1b\u0e17\u0e35\u0e48 ~\u0e3f228M \u0e20\u0e32\u0e22\u0e43\u0e19 12\u201318 \u0e40\u0e14\u0e37\u0e2d\u0e19 \u2014 \u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 3.8\u00d7 \u0e02\u0e2d\u0e07 TTM run-rate \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 NI \u0e1b\u0e01\u0e15\u0e34\u0e17\u0e35\u0e48\u0e2a\u0e21\u0e40\u0e2b\u0e15\u0e38\u0e2a\u0e21\u0e1c\u0e25\u0e01\u0e27\u0e48\u0e32 \u0e3f150M \u0e04\u0e34\u0e14\u0e40\u0e1b\u0e47\u0e19 forward P/E ~23\u00d7 \u0e0b\u0e36\u0e48\u0e07\u0e44\u0e21\u0e48\u0e16\u0e39\u0e01\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a lender \u0e17\u0e35\u0e48 ROIC \u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 1% \u0e41\u0e25\u0e30\u0e44\u0e21\u0e48\u0e21\u0e35 moat \u0e14\u0e39 <code>--step valuation</code> \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a reverse-DCF \u0e40\u0e15\u0e47\u0e21\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a",
+    "narrative": "HENG \u0e2d\u0e22\u0e39\u0e48\u0e17\u0e35\u0e48\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e35\u0e48\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e02\u0e2d\u0e07\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e1a\u0e23\u0e34\u0e42\u0e20\u0e04 non-bank \u0e44\u0e17\u0e22 \u2014 \u0e19\u0e32\u0e42\u0e19\u0e44\u0e1f\u0e41\u0e19\u0e19\u0e0b\u0e4c\u0e41\u0e25\u0e30\u0e40\u0e0a\u0e48\u0e32\u0e0b\u0e37\u0e49\u0e2d\u0e01\u0e31\u0e1a\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e20\u0e32\u0e04\u0e40\u0e2b\u0e19\u0e37\u0e2d\u0e17\u0e35\u0e48\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e18\u0e19\u0e32\u0e04\u0e32\u0e23\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 \u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e17\u0e35\u0e48\u0e2b\u0e19\u0e35\u0e49\u0e04\u0e23\u0e31\u0e27\u0e40\u0e23\u0e37\u0e2d\u0e19\u0e44\u0e17\u0e22\u0e2a\u0e39\u0e07 bull story \u0e04\u0e37\u0e2d mean-reversion \u0e04\u0e25\u0e32\u0e2a\u0e2a\u0e34\u0e01: provision overshoot, \u0e15\u0e49\u0e19\u0e17\u0e38\u0e19\u0e25\u0e14, \u0e07\u0e1a\u0e14\u0e38\u0e25\u0e2a\u0e30\u0e2d\u0e32\u0e14\u0e23\u0e2d\u0e07\u0e23\u0e31\u0e1a origination cycle \u0e43\u0e2b\u0e21\u0e48 bear story \u0e04\u0e37\u0e2d\u0e01\u0e32\u0e23\u0e40\u0e2a\u0e37\u0e48\u0e2d\u0e21\u0e16\u0e2d\u0e22\u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07: \u0e25\u0e39\u0e01\u0e2b\u0e19\u0e35\u0e49\u0e17\u0e35\u0e48\u0e14\u0e35\u0e0a\u0e33\u0e23\u0e30\u0e41\u0e25\u0e49\u0e27 pool \u0e17\u0e35\u0e48\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e04\u0e38\u0e13\u0e20\u0e32\u0e1e\u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32\u0e41\u0e25\u0e30 default rate \u0e08\u0e30\u0e22\u0e31\u0e07\u0e2a\u0e39\u0e07\u0e2d\u0e22\u0e39\u0e48",
+    "metrics": [
+      "Provision rate: 41.2% \u0e02\u0e2d\u0e07 revenue-before-provision (Q2 2026) \u0e40\u0e17\u0e35\u0e22\u0e1a 24.6% (Q1 2026) \u2014 <strong>+16.6pp QoQ</strong> (\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e31\u0e0d\u0e0d\u0e32\u0e13 trough \u0e17\u0e35\u0e48\u0e22\u0e31\u0e48\u0e07\u0e22\u0e37\u0e19)",
+      "\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e2a\u0e38\u0e17\u0e18\u0e34 (Net revenue \u0e2b\u0e25\u0e31\u0e07 provision): \u0e3f209.8M, \u221224.3% QoQ / \u221227.2% YoY",
+      "Gross interest income: \u0e3f369.8M, \u22126.4% QoQ / ~\u221227% YoY",
+      "D/E: 0.53\u00d7 \u0e40\u0e17\u0e35\u0e22\u0e1a 0.79\u00d7 (\u0e2a\u0e34\u0e49\u0e19\u0e1b\u0e35 FY2025) \u2014 deleverage \u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e15\u0e48\u0e2d",
+      "OCF: \u0e3f654M (Q2 2026) \u0e40\u0e17\u0e35\u0e22\u0e1a \u0e3f812M (Q1 2026) \u2014 *loan-runoff artefact \u0e25\u0e14\u0e25\u0e07\u0e15\u0e32\u0e21 portfolio \u0e17\u0e35\u0e48 stabilise*"
+    ],
+    "questions": [
+      "NPL ratio (\u0e25\u0e39\u0e01\u0e2b\u0e19\u0e35\u0e49\u0e04\u0e49\u0e32\u0e07\u0e40\u0e01\u0e34\u0e19 90 \u0e27\u0e31\u0e19 / \u0e25\u0e39\u0e01\u0e2b\u0e19\u0e35\u0e49\u0e23\u0e27\u0e21) \u0e41\u0e22\u0e01\u0e15\u0e32\u0e21\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e1c\u0e25\u0e34\u0e15\u0e20\u0e31\u0e13\u0e11\u0e4c + ECL coverage ratio \u2014 \u0e44\u0e21\u0e48\u0e21\u0e35\u0e43\u0e19 filing \u0e17\u0e35\u0e48\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e44\u0e14\u0e49",
+      "Covenant threshold (D/E \u0e41\u0e25\u0e30 EBIT/interest \u0e02\u0e31\u0e49\u0e19\u0e15\u0e48\u0e33) + compliance status \u0e13 Q4 2025 \u0e17\u0e35\u0e48 EBIT \u0e15\u0e34\u0e14\u0e25\u0e1a",
+      "\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e2b\u0e38\u0e49\u0e19\u0e01\u0e39\u0e49: \u0e0a\u0e37\u0e48\u0e2d\u0e0a\u0e38\u0e14 \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22 \u0e27\u0e31\u0e19\u0e04\u0e23\u0e1a\u0e01\u0e33\u0e2b\u0e19\u0e14 \u0e41\u0e25\u0e30 breakdown \u0e02\u0e2d\u0e07 \u0e3f1,928M current LTD",
+      "\u0e22\u0e2d\u0e14\u0e2a\u0e38\u0e17\u0e18\u0e34 \u0e17\u0e23\u0e31\u0e1e\u0e22\u0e4c\u0e2a\u0e34\u0e19\u0e23\u0e2d\u0e01\u0e32\u0e23\u0e02\u0e32\u0e22 (repossessed assets) + average recovery rate \u0e40\u0e17\u0e35\u0e22\u0e1a book value \u0e43\u0e19 FY2024\u20132026",
+      "Geographic breakdown \u0e2a\u0e32\u0e02\u0e32 450 \u0e41\u0e2b\u0e48\u0e07: % \u0e20\u0e32\u0e04\u0e40\u0e2b\u0e19\u0e37\u0e2d vs \u0e20\u0e39\u0e21\u0e34\u0e20\u0e32\u0e04\u0e2d\u0e37\u0e48\u0e19; NPL formation rate \u0e23\u0e32\u0e22\u0e20\u0e39\u0e21\u0e34\u0e20\u0e32\u0e04\u0e40\u0e17\u0e35\u0e22\u0e1a\u0e04\u0e48\u0e32\u0e40\u0e09\u0e25\u0e35\u0e48\u0e22\u0e23\u0e30\u0e1a\u0e1a"
+    ]
+  },
+  "kill_price": {
+    "conviction": "Low",
+    "kill_price": "\u0e3f0.60 \u2014 \u0e2d\u0e2d\u0e01\u0e2b\u0e32\u0e01\u0e1c\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a\u0e01\u0e32\u0e23 Q3 2026 (\u0e1e.\u0e22. 2569) \u0e41\u0e2a\u0e14\u0e07 provision >\u0e3f150M \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 recurring NPL cycle \u0e40\u0e0a\u0e34\u0e07\u0e42\u0e04\u0e23\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07; \u0e2b\u0e23\u0e37\u0e2d\u0e21\u0e35\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e2d\u0e2d\u0e01\u0e2b\u0e38\u0e49\u0e19\u0e01\u0e39\u0e49\u0e43\u0e2b\u0e21\u0e48\u0e17\u0e35\u0e48 coupon > reference rate +300bps \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e27\u0e48\u0e32 refinancing wall \u0e21\u0e35\u0e15\u0e49\u0e19\u0e17\u0e38\u0e19\u0e2a\u0e39\u0e07\u0e08\u0e19\u0e17\u0e33\u0e25\u0e32\u0e22 forward NI recovery",
+    "kill_trigger": "SET filing \u0e40\u0e1b\u0e34\u0e14\u0e40\u0e1c\u0e22 covenant waiver \u0e2b\u0e23\u0e37\u0e2d default event \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e0a\u0e48\u0e27\u0e07 Q4 2025; \u0e2b\u0e23\u0e37\u0e2d\u0e1c\u0e39\u0e49\u0e1a\u0e23\u0e34\u0e2b\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e1b\u0e31\u0e19\u0e1c\u0e25 FY2026 \u2265\u0e3f150M \u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e01\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e27\u0e07\u0e40\u0e07\u0e34\u0e19\u0e2a\u0e34\u0e19\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e43\u0e2b\u0e21\u0e48 \u2014 \u0e04\u0e27\u0e32\u0e21\u0e02\u0e31\u0e14\u0e41\u0e22\u0e49\u0e07\u0e23\u0e30\u0e2b\u0e27\u0e48\u0e32\u0e07 capital extraction \u0e01\u0e31\u0e1a re-growth \u0e17\u0e35\u0e48\u0e0a\u0e31\u0e14\u0e40\u0e08\u0e19",
+    "rationale": ""
+  },
+  "munger_verdict": ""
+};
+
+// ─── THEME-AWARE CHART COLORS ────────────────────────────────────────────────
+const cs = getComputedStyle(document.documentElement);
+const tok = name => cs.getPropertyValue(name).trim();
+const COLORS = {
+  ink: tok('--ink'), muted: tok('--muted'), line: tok('--line'),
+  accent: tok('--accent'), accent2: tok('--accent2'), good: tok('--good'), danger: tok('--danger'),
+};
+
+const cd = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: COLORS.muted, font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: COLORS.muted, font: { size: 11 } }, grid: { color: COLORS.line } },
+    y: { ticks: { color: COLORS.muted, font: { size: 11 } }, grid: { color: COLORS.line } }
+  }
+};
+
+const annual   = [...REPORT_DATA.annual_rows].reverse();
+const quarters = [...REPORT_DATA.quarters].reverse();
+
+new Chart(document.getElementById('annualRevenueChart'), {
+  type: 'bar',
+  data: { labels: annual.map(a => a.label),
+    datasets: [{ label: 'Revenue ($B)', data: annual.map(a => a.revenue_b), backgroundColor: COLORS.accent2, borderRadius: 4 }] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('annualMarginChart'), {
+  type: 'line',
+  data: { labels: annual.map(a => a.label),
+    datasets: [
+      { label: 'Gross', data: annual.map(a => a.gross_margin_pct), borderColor: COLORS.good, tension: 0.3, fill: false },
+      { label: 'Op.',   data: annual.map(a => a.op_margin_pct),    borderColor: COLORS.accent2, tension: 0.3, fill: false },
+      { label: 'Net',   data: annual.map(a => a.net_margin_pct),   borderColor: COLORS.accent, tension: 0.3, fill: false },
+    ] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('quarterlyRevenueChart'), {
+  type: 'bar',
+  data: { labels: quarters.map(q => q.label),
+    datasets: [{ label: 'Revenue ($B)', data: quarters.map(q => q.revenue_b),
+      backgroundColor: quarters.map((_, i, a) => i === a.length - 1 ? COLORS.accent : COLORS.accent2), borderRadius: 4 }] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: { labels: quarters.map(q => q.label),
+    datasets: [
+      { label: 'YoY %', data: quarters.map(q => q.yoy_growth), borderColor: COLORS.good, tension: 0.3, fill: false },
+      { label: 'QoQ %', data: quarters.map(q => q.qoq_growth || 0), borderColor: COLORS.accent, tension: 0.3, fill: false, borderDash: [4,4] },
+    ] },
+  options: { ...cd }
+});
+
+// ─── EXECUTIVE SUMMARY ────────────────────────────────────────────────────────
+document.getElementById('exec').innerHTML = REPORT_DATA.exec_summary_html || '';
+
+// ─── ANNUAL / QUARTERLY TABLES ─────────────────────────────────────────────────
+const atbody = document.getElementById('annualTable');
+REPORT_DATA.annual_rows.forEach(a => {
+  const yoy = a.yoy_growth > 0 ? `<span class="up">+${a.yoy_growth}%</span>` : a.yoy_growth < 0 ? `<span class="down">${a.yoy_growth}%</span>` : '—';
+  atbody.innerHTML += `<tr><td><b>${a.label}</b></td><td>$${a.revenue_b}B</td><td>${yoy}</td><td>${a.gross_margin_pct}%</td><td>${a.op_margin_pct}%</td><td>$${a.net_income_b}B</td><td>${a.fcf_b ? '$'+a.fcf_b+'B' : '—'}</td><td>${a.eps != null ? '$'+a.eps : 'N/A'}</td></tr>`;
+});
+
+const qtbody = document.getElementById('quarterlyTable');
+REPORT_DATA.quarters.forEach(q => {
+  const yoy = q.yoy_growth > 0 ? `<span class="up">+${q.yoy_growth}%</span>` : q.yoy_growth < 0 ? `<span class="down">${q.yoy_growth}%</span>` : '—';
+  const qoq = q.qoq_growth > 0 ? `<span class="up">+${q.qoq_growth}%</span>` : q.qoq_growth < 0 ? `<span class="down">${q.qoq_growth}%</span>` : '—';
+  qtbody.innerHTML += `<tr><td><b>${q.label}</b></td><td>$${q.revenue_b}B</td><td>${yoy}</td><td>${qoq}</td><td>${q.gross_margin_pct}%</td><td>${q.op_margin_pct}%</td><td>${q.net_income_b ? '$'+q.net_income_b+'B' : '—'}</td><td>${q.fcf_b ? '$'+q.fcf_b+'B' : '—'}</td><td>${q.eps}</td></tr>`;
+});
+
+// ─── GUIDANCE TABLE ───────────────────────────────────────────────────────────
+const gtbody = document.getElementById('guidanceTable');
+REPORT_DATA.guidance.forEach(g => {
+  const r = (g.result || '').toLowerCase();
+  const cls = r.includes('beat') ? 'beat' : r.includes('miss') ? 'miss' : (r.includes('inline') || r.includes('in-line')) ? 'inline-r' : 'neutral';
+  gtbody.innerHTML += `<tr><td>${g.period}</td><td>${g.metric}</td><td>${g.guidance}</td><td>${g.actual}</td><td><span class="${cls}">${g.result || '—'}</span></td></tr>`;
+});
+
+// ─── GROWTH DRIVERS / KEY RISKS (shared <ol><li> HTML from the parser) ────────
+document.getElementById('growthList').innerHTML = (REPORT_DATA.growth_html || '').replace(/^<ol>|<\/ol>$/g, '');
+document.getElementById('riskList').innerHTML = (REPORT_DATA.risks_html || '').replace(/^<ol>|<\/ol>$/g, '');
+
+// ─── BULL / BEAR + EDGE ─────────────────────────────────────────────────────────
+const bullList = document.getElementById('bullList');
+REPORT_DATA.bull_case.forEach(b => { bullList.innerHTML += `<li>${b}</li>`; });
+const bearList = document.getElementById('bearList');
+REPORT_DATA.bear_case.forEach(b => { bearList.innerHTML += `<li>${b}</li>`; });
+if (REPORT_DATA.edge_html) {
+  document.getElementById('edgeCallout').hidden = false;
+  document.getElementById('edgeText').innerHTML = REPORT_DATA.edge_html;
+}
+
+// ─── SECTOR LENS ───────────────────────────────────────────────────────────────
+const lens = REPORT_DATA.sector_lens || {};
+if (lens.classification || lens.tam || lens.narrative) {
+  document.getElementById('lens').hidden = false;
+  document.getElementById('lensClassification').innerHTML = lens.classification || '—';
+  document.getElementById('lensTam').innerHTML = lens.tam || '—';
+  document.getElementById('lensPricedIn').innerHTML = lens.priced_in || '—';
+  document.getElementById('lensNarrative').innerHTML = lens.narrative || '—';
+  const lm = document.getElementById('lensMetrics');
+  (lens.metrics || []).forEach(m => { lm.innerHTML += `<li>${m}</li>`; });
+  const lq = document.getElementById('lensQuestions');
+  (lens.questions || []).forEach(q => { lq.innerHTML += `<li>${q}</li>`; });
+}
+
+// ─── KEY METRICS ──────────────────────────────────────────────────────────────
+const metricsWrap = document.getElementById('metricsWatch');
+REPORT_DATA.key_metrics.forEach(m => {
+  metricsWrap.innerHTML += `<div class="metric-row"><span class="metric-name">${m.name}</span><span class="metric-threshold">${m.threshold}</span></div>`;
+});
+
+// ─── KILL PRICE & CONVICTION ────────────────────────────────────────────────────
+const kp = REPORT_DATA.kill_price || {};
+if (kp.conviction || kp.kill_price) {
+  document.getElementById('killbar').hidden = false;
+  document.getElementById('killConviction').innerHTML = kp.conviction || '—';
+  document.getElementById('killPrice').innerHTML = kp.kill_price || '—';
+  document.getElementById('killTrigger').innerHTML = kp.kill_trigger || '—';
+  document.getElementById('killRationale').innerHTML = kp.rationale || '';
+}
+if (kp.conviction) {
+  // strip HTML tags for the compact stat-tile value (e.g. "<strong>Medium</strong>" -> "Medium")
+  const plainConviction = kp.conviction.replace(/<[^>]+>/g, '').trim();
+  const verdict = REPORT_DATA.munger_verdict || '—';
+  const subEl = document.getElementById('convictionSub');
+  document.getElementById('convictionKpi').hidden = false;
+  document.getElementById('convictionValue').textContent = plainConviction;
+  subEl.textContent = 'Munger: ' + verdict;
+  subEl.className = 'kpi-change ' + (verdict.toUpperCase() === 'BUY' ? 'up' : verdict ? 'down' : 'neutral');
+}
+
+// ─── TOC SCROLL-SPY ───────────────────────────────────────────────────────────
+const tocLinks = Array.from(document.querySelectorAll('#tocNav a'));
+const targets = tocLinks.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+if ('IntersectionObserver' in window && targets.length) {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  targets.forEach(t => obs.observe(t));
+}
+</script>
+</body>
+</html>
