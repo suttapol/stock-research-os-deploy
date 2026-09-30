@@ -1,0 +1,20 @@
+{
+  "ticker": "AAPL",
+  "built": "2026-09-30",
+  "figures": [
+    {
+      "id": "supply_chain",
+      "after_heading": "supply chain",
+      "title_th": "ห่วงโซ่อุปทาน",
+      "caption_th": "ตำแหน่งของบริษัทระหว่างซัพพลายเออร์กับลูกค้า · เส้นประ = คอขวดและความเสี่ยงเชิงภูมิรัฐศาสตร์",
+      "png": "diagrams/supply_chain.png"
+    },
+    {
+      "id": "eps_scenario",
+      "after_heading": "scenario",
+      "title_th": "การประเมินมูลค่า · Scenario Fan เป้าราคา",
+      "caption_th": "เป้าราคาแต่ละ scenario วางบนเส้นราคาเดียวกับราคาปัจจุบัน — เห็น asymmetry ของ downside/upside",
+      "png": "diagrams/eps_scenario.png"
+    }
+  ]
+}
