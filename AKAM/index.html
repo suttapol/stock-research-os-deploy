@@ -1,0 +1,67 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AKAM — Deep-Dive Diagrams</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#FBFCFA; --ink:#1B1E1A; --muted:#5F665C; --hair:#E3E7DF;
+  --accent:#2E6F8E; --accent-soft:#7FB0C4; --on-accent:#FBFCFA;
+  --warn:#B4632B; --down:#B23A3A; --good:#3F7D3F;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111413; --ink:#E7EAE4; --muted:#9AA294; --hair:#2A2F28;
+    --accent:#6FB2CE; --accent-soft:#3C6C80; --on-accent:#111413;
+    --warn:#D9925A; --down:#E27171; --good:#79B979;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111413; --ink:#E7EAE4; --muted:#9AA294; --hair:#2A2F28;
+  --accent:#6FB2CE; --accent-soft:#3C6C80; --on-accent:#111413;
+  --warn:#D9925A; --down:#E27171; --good:#79B979;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:Geist,'Segoe UI',system-ui,sans-serif;line-height:1.6}
+.dgm{margin:0;padding:20px 14px 28px;max-width:688px}
+.dgm svg{display:block;width:100%;height:auto;color:var(--ink)}
+.dgm-title{font-family:Geist,'Segoe UI',sans-serif;font-weight:600;font-size:.78rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.dgm-note{font-size:.82rem;color:var(--muted);margin-top:10px;line-height:1.5}
+
+body{font-family:Geist,'Segoe UI',system-ui,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px 72px}
+header.top{border-bottom:1px solid var(--hair);margin-bottom:8px}
+header.top .wrap{padding:40px 20px 28px}
+.eyebrow{font-family:Geist Mono,ui-monospace,monospace;font-size:.7rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+h1{font-family:Instrument Serif,Georgia,serif;font-weight:400;font-size:2.4rem;line-height:1.1;
+  margin:0 0 10px;text-wrap:balance}
+.sub{color:var(--muted);margin:0;font-size:1rem;max-width:44rem}
+nav.links{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:20px}
+nav.links a{font-family:Geist Mono,ui-monospace,monospace;font-size:.76rem;text-decoration:none;
+  color:var(--ink);border:1px solid var(--hair);border-radius:5px;padding:5px 10px}
+nav.links a:hover{border-color:var(--accent);color:var(--accent)}
+nav.links a[hidden]{display:none}
+.dgm{border-top:1px solid var(--hair);padding-top:28px}
+.dgm:first-of-type{border-top:0}
+footer{border-top:1px solid var(--hair);color:var(--muted);font-size:.8rem;margin-top:32px}
+footer .wrap{padding:20px 20px 0}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style></head><body>
+<header class="top"><div class="wrap">
+  <p class="eyebrow">Stock Research OS · แผนภาพประกอบ Deep-Dive</p>
+  <h1>AKAM</h1>
+  <p class="sub">แผนภาพจากรายงานวิจัยเชิงลึก — ทุกตัวเลขดึงจากงบที่ตรวจแล้ว
+  (<code>financials_extracted.json</code>) และรายงาน deep-dive โดยตรง. อัปเดต 2026-09-30.</p>
+  <nav class="links"><a href="AKAM_20260930_report.html">รายงานฉบับเต็ม (HTML) ↗</a></nav>
+</div></header>
+<main class="wrap">
+<figure id="supply_chain" class="dgm"><figcaption class="dgm-title">ห่วงโซ่อุปทาน</figcaption><svg viewBox="0 0 640 296" role="img" aria-label="ห่วงโซ่อุปทาน" preserveAspectRatio="xMidYMid meet"><defs><marker id="dk-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker><marker id="dk-ahW" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker></defs><text x="70" y="20" font-family="Geist Mono, ui-monospace, monospace" font-size="11" fill="var(--muted)" text-anchor="middle" letter-spacing="1">ต้นน้ำ</text><text x="320" y="20" font-family="Geist Mono, ui-monospace, monospace" font-size="11" fill="var(--muted)" text-anchor="middle" letter-spacing="1">กลางน้ำ</text><text x="560" y="20" font-family="Geist Mono, ui-monospace, monospace" font-size="11" fill="var(--muted)" text-anchor="middle" letter-spacing="1">ปลายน้ำ</text><rect x="4" y="44.0" width="176" height="52" rx="4" fill="none" stroke="currentColor"/><text x="16" y="64.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="11.5" fill="currentColor" font-weight="600">ผู้จัดหาฮาร์ดแวร์</text><text x="16" y="82.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)">Servers/GPUs/Storage สำหรับ</text><rect x="4" y="108.0" width="176" height="52" rx="4" fill="none" stroke="currentColor"/><text x="16" y="128.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="currentColor" font-weight="600">ผู้ให้บริการ DC</text><text x="16" y="146.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)">Equinix, Digital Realty</text><rect x="4" y="172.0" width="176" height="52" rx="4" fill="none" stroke="currentColor"/><text x="16" y="192.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="currentColor" font-weight="600">ผู้ให้บริการ ISP</text><text x="16" y="210.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)">Tier-1 bandwidth ระดับโลก</text><rect x="460" y="44.0" width="176" height="52" rx="4" fill="none" stroke="currentColor"/><text x="472" y="64.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="currentColor" font-weight="600">Enterprise Sales</text><text x="472" y="82.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)">Direct account management</text><rect x="460" y="108.0" width="176" height="52" rx="4" fill="none" stroke="currentColor"/><text x="472" y="128.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="currentColor" font-weight="600">Channel Partners</text><text x="472" y="146.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)">Reseller/integrator network</text><rect x="460" y="172.0" width="176" height="52" rx="4" fill="none" stroke="currentColor"/><text x="472" y="192.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="currentColor" font-weight="600">Enterprise</text><text x="472" y="210.0" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)">Fortune 500 base, ~80%</text><rect x="220" y="92" width="200" height="104" rx="4" fill="var(--accent)" fill-opacity="0.12" stroke="var(--accent)"/><text x="320.0" y="124" font-family="Instrument Serif, Georgia, serif" font-size="19" fill="currentColor" text-anchor="middle">Akamai</text><text x="320.0" y="144" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)" text-anchor="middle">Edge Network 4,300+ PoP</text><text x="320.0" y="160" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)" text-anchor="middle">Security 53%, Delivery 30%</text><text x="320.0" y="176" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="10" fill="var(--muted)" text-anchor="middle">Narrow moat; ROIC &lt; WACC</text><line x1="180" y1="70.0" x2="220" y2="144.0" stroke="currentColor" stroke-width="1.4" marker-end="url(#dk-ah)"/><line x1="180" y1="134.0" x2="220" y2="144.0" stroke="currentColor" stroke-width="1.4" marker-end="url(#dk-ah)"/><line x1="180" y1="198.0" x2="220" y2="144.0" stroke="currentColor" stroke-width="1.4" marker-end="url(#dk-ah)"/><line x1="420" y1="144.0" x2="460" y2="70.0" stroke="currentColor" stroke-width="1.4" marker-end="url(#dk-ah)"/><line x1="420" y1="144.0" x2="460" y2="134.0" stroke="currentColor" stroke-width="1.4" marker-end="url(#dk-ah)"/><line x1="420" y1="144.0" x2="460" y2="198.0" stroke="currentColor" stroke-width="1.4" marker-end="url(#dk-ah)"/><line x1="8" y1="226" x2="632" y2="226" stroke="var(--warn)" stroke-width="1.3" stroke-dasharray="5 4"/><text x="8" y="244" font-family="Geist Mono, ui-monospace, monospace" font-size="10.5" fill="var(--warn)" font-weight="500">คอขวด</text><text x="8" y="260" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="currentColor">NVIDIA GPU supply constraint · CIS infrastructure $700-800M/12mo</text></svg><figcaption class="dgm-note">ตำแหน่งของบริษัทระหว่างซัพพลายเออร์กับลูกค้า · เส้นประ = คอขวดและความเสี่ยงเชิงภูมิรัฐศาสตร์</figcaption></figure>
+<figure id="eps_scenario" class="dgm"><figcaption class="dgm-title">การประเมินมูลค่า · Scenario Fan เป้าราคา</figcaption><svg viewBox="0 0 640 226" role="img" aria-label="การประเมินมูลค่า · Scenario Fan เป้าราคา" preserveAspectRatio="xMidYMid meet"><defs><marker id="dk-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker><marker id="dk-ahW" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker></defs><line x1="44" y1="170" x2="616" y2="170" stroke="var(--hair)" stroke-width="1"/><line x1="44.0" y1="166" x2="44.0" y2="174" stroke="var(--hair)" stroke-width="1"/><text x="44.0" y="188" font-family="Geist Mono, ui-monospace, monospace" font-size="9" fill="var(--muted)" text-anchor="middle">$0</text><line x1="158.4" y1="166" x2="158.4" y2="174" stroke="var(--hair)" stroke-width="1"/><text x="158.4" y="188" font-family="Geist Mono, ui-monospace, monospace" font-size="9" fill="var(--muted)" text-anchor="middle">$50</text><line x1="272.8" y1="166" x2="272.8" y2="174" stroke="var(--hair)" stroke-width="1"/><text x="272.8" y="188" font-family="Geist Mono, ui-monospace, monospace" font-size="9" fill="var(--muted)" text-anchor="middle">$100</text><line x1="387.2" y1="166" x2="387.2" y2="174" stroke="var(--hair)" stroke-width="1"/><text x="387.2" y="188" font-family="Geist Mono, ui-monospace, monospace" font-size="9" fill="var(--muted)" text-anchor="middle">$150</text><line x1="501.6" y1="166" x2="501.6" y2="174" stroke="var(--hair)" stroke-width="1"/><text x="501.6" y="188" font-family="Geist Mono, ui-monospace, monospace" font-size="9" fill="var(--muted)" text-anchor="middle">$200</text><line x1="616.0" y1="166" x2="616.0" y2="174" stroke="var(--hair)" stroke-width="1"/><text x="616.0" y="188" font-family="Geist Mono, ui-monospace, monospace" font-size="9" fill="var(--muted)" text-anchor="middle">$250</text><line x1="383.10448" y1="44" x2="383.10448" y2="170" stroke="currentColor" stroke-width="1.5"/><text x="383.10448" y="36" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="currentColor" text-anchor="middle" font-weight="600">วันนี้ $148</text><line x1="383.10448" y1="52" x2="229.328" y2="52" stroke="var(--down)" stroke-width="2"/><circle cx="229" cy="52" r="5" fill="var(--down)"/><text x="239.328" y="47" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="11.5" fill="var(--down)" font-weight="600">Bear $81</text><text x="239.328" y="63" font-family="Geist Mono, ui-monospace, monospace" font-size="9.5" fill="var(--muted)">-45%  ·  $5.8  ·  14×</text><line x1="383.10448" y1="82" x2="378.048" y2="82" stroke="var(--down)" stroke-width="2"/><circle cx="378" cy="82" r="5" fill="var(--down)"/><text x="388.048" y="77" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="11.5" fill="var(--down)" font-weight="600">Base $146</text><text x="388.048" y="93" font-family="Geist Mono, ui-monospace, monospace" font-size="9.5" fill="var(--muted)">-1%  ·  $7.3  ·  20×</text><line x1="383.10448" y1="112" x2="588.544" y2="112" stroke="var(--good)" stroke-width="2"/><circle cx="589" cy="112" r="5" fill="var(--good)"/><text x="578.544" y="107" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="11.5" fill="var(--good)" text-anchor="end" font-weight="600">Bull $238</text><text x="578.544" y="123" font-family="Geist Mono, ui-monospace, monospace" font-size="9.5" fill="var(--muted)" text-anchor="end">+61%  ·  $9.5  ·  25×</text><text x="44" y="216" font-family="Geist, 'Segoe UI', system-ui, sans-serif" font-size="11" fill="var(--muted)">ตัวแปรชี้ขาด: Security YoY: Base 9% vs Bear 5%</text></svg><figcaption class="dgm-note">เป้าราคาแต่ละ scenario วางบนเส้นราคาเดียวกับราคาปัจจุบัน — เห็น asymmetry ของ downside/upside</figcaption></figure>
+</main>
+<footer><div class="wrap">
+  สร้างอัตโนมัติโดย <code>build_dashboard.py</code> · เผยแพร่ผ่าน GitHub Pages ·
+  แผนภาพนี้เป็นภาพประกอบ ไม่ใช่คำแนะนำการลงทุน
+</div></footer>
+</body></html>
