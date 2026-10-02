@@ -1,0 +1,20 @@
+{
+  "ticker": "EL",
+  "built": "2026-10-03",
+  "figures": [
+    {
+      "id": "guidance_track",
+      "after_heading": "guidance",
+      "title_th": "ผู้บริหาร · Guidance เทียบผลจริง",
+      "caption_th": "จุดเขียว = ทำได้เกิน guidance, จุดแดง = ต่ำกว่า — track record ผู้บริหารในภาพเดียว",
+      "png": "diagrams/guidance_track.png"
+    },
+    {
+      "id": "eps_scenario",
+      "after_heading": "scenario",
+      "title_th": "การประเมินมูลค่า · Scenario Fan เป้าราคา",
+      "caption_th": "เป้าราคาแต่ละ scenario วางบนเส้นราคาเดียวกับราคาปัจจุบัน — เห็น asymmetry ของ downside/upside",
+      "png": "diagrams/eps_scenario.png"
+    }
+  ]
+}
