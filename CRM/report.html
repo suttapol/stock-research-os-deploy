@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM Research Report — Stock Research OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Taviraj:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --paper:#f3efe4; --ink:#221d16; --muted:#6f6350; --card:#fffdf7; --line:#ddd2b8;
+      --accent:#d9720d; --accent-ink:#ffffff; --accent2:#0e7a6f; --accent2-bg:#dcf0ec;
+      --danger:#c53a2c; --danger-bg:#fbe2de; --good:#1f8a4c; --good-bg:#dcf1e2; --warn-bg:#fbecc9;
+      --shadow: 0 10px 28px rgba(34,29,22,.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper:#161310; --ink:#f2ead9; --muted:#c2b294; --card:#211c15; --line:#3c3323;
+        --accent:#ffab4d; --accent-ink:#1a1208; --accent2:#4fd8c8; --accent2-bg:#123330;
+        --danger:#ff8a75; --danger-bg:#3a1c16; --good:#5fe093; --good-bg:#153322; --warn-bg:#3d2e10;
+        --shadow: 0 10px 30px rgba(0,0,0,.45);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--paper); color: var(--ink); font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', -apple-system, sans-serif; font-size: 14px; line-height: 1.7; padding: 0 16px; }
+    h1, h2, h3 { font-family: 'Taviraj', 'Noto Serif Thai', serif; text-wrap: balance; letter-spacing: -.01em; }
+    a { color: var(--accent2); }
+    code { font-family: 'IBM Plex Mono', monospace; background: var(--accent2-bg); color: var(--accent2); padding: 1px 5px; border-radius: 4px; font-size: .85em; }
+    .num, .tabular { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    .badge { display:inline-block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:5px; margin:0 2px; }
+    .badge.est { background: var(--warn-bg); color: var(--accent); }
+    .badge.unverified { background: var(--danger-bg); color: var(--danger); }
+
+    /* Shell: sticky TOC + main content */
+    .shell { max-width: 1200px; margin: 0 auto; padding-block: 28px 60px; display: grid; grid-template-columns: 210px minmax(0,1fr); gap: 26px; align-items: start; }
+    .toc { position: sticky; top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
+    .toc strong { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 10px; }
+    .toc a { display: block; color: var(--muted); text-decoration: none; font-size: .86rem; padding: 6px 9px; border-radius: 8px; margin-bottom: 2px; }
+    .toc a:hover { background: var(--accent2-bg); color: var(--accent2); }
+    .toc a.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+    main { min-width: 0; }
+
+    /* Header */
+    .header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 22px; }
+    .eyebrow { font-size: .74rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+    .ticker-badge { font-size: 42px; font-weight: 700; line-height: 1; }
+    .company-name { font-size: 16px; color: var(--muted); margin-top: 4px; }
+    .meta-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .pill { border:1px solid var(--line); background:var(--card); padding:5px 11px; border-radius:999px; font-size:.82rem; color:var(--muted); }
+    .pill b { color: var(--ink); }
+    .pill.flag { border-color: var(--danger); color: var(--danger); background: var(--danger-bg); font-weight: 600; }
+
+    /* Exec summary */
+    .exec-summary { max-width: 74ch; margin-bottom: 26px; font-size: 1rem; }
+    .exec-summary p { margin: 0 0 1em; }
+    .exec-summary p:last-child { margin-bottom: 0; }
+
+    /* Cards */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); }
+    .card-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; font-weight: 600; font-family: 'IBM Plex Sans Thai', sans-serif; }
+
+    /* KPI boxes */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; box-shadow: var(--shadow); }
+    .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi-value { font-size: 22px; font-weight: 700; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
+    .kpi-change { font-size: 12px; margin-top: 2px; }
+    .up { color: var(--good); }
+    .down { color: var(--danger); }
+    .neutral { color: var(--muted); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--line); font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+    td:first-child { font-family: 'IBM Plex Sans Thai', sans-serif; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--accent2-bg); }
+    .beat { color: var(--good); font-weight: 600; }
+    .miss { color: var(--danger); font-weight: 600; }
+    .inline-r { color: var(--accent); font-weight: 600; }
+
+    /* Section headers */
+    .section { margin-bottom: 24px; scroll-margin-top: 16px; }
+    .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-family: 'Taviraj', serif; }
+
+    /* Growth drivers — numbered card list */
+    ol.numbered { padding-left: 0; list-style: none; counter-reset: n; }
+    ol.numbered li { counter-increment: n; position: relative; padding: 10px 14px 10px 40px; margin-bottom: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; }
+    ol.numbered li::before { content: counter(n); position: absolute; left: 12px; top: 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--accent2); }
+    .growth-list li { border-left: 4px solid var(--accent2); }
+
+    /* Key risks — tinted callouts (full background, not just a border) so
+    severity reads at a glance rather than blending into a plain card list */
+    ol.risk-list { padding-left: 0; list-style: none; counter-reset: n; }
+    .risk-list li { counter-increment: n; position: relative; padding: 12px 16px 12px 44px; margin-bottom: 8px; background: var(--danger-bg); border-radius: 10px; font-size: 13.5px; }
+    .risk-list li::before { content: counter(n); position: absolute; left: 14px; top: 12px; font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--danger); }
+
+    /* Bull / Bear */
+    .bull-bear { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bull-card, .bear-card { border-radius: 12px; padding: 16px; }
+    .bull-card { background: var(--good-bg); }
+    .bear-card { background: var(--danger-bg); }
+    .bull-card .card-title { color: var(--good); }
+    .bear-card .card-title { color: var(--danger); }
+    ul.case-list { padding-left: 0; list-style: none; }
+    ul.case-list li { margin-bottom: 8px; font-size: 13px; }
+    .edge-callout { margin-top: 12px; background: var(--warn-bg); border-radius: 10px; padding: 14px 16px; font-size: 13.5px; }
+    .edge-callout .edge-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin-bottom: 5px; }
+
+    /* Sector lens */
+    .lens-field { margin-bottom: 14px; font-size: 13.5px; }
+    .lens-field .lens-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent2); font-weight: 700; margin-bottom: 4px; }
+    .lens-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+    .lens-cols h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 8px; }
+    ul.tight { padding-left: 1.1em; margin: 0; }
+    ul.tight li { margin: 6px 0; font-size: 13px; }
+
+    /* Metrics watchlist */
+    .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); gap: 12px; }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-name { font-weight: 500; }
+    .metric-threshold { font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: var(--accent2-bg); color: var(--accent2); padding: 2px 8px; border-radius: 4px; }
+
+    /* Kill price banner */
+    .killbar { background: linear-gradient(135deg, var(--ink), color-mix(in srgb, var(--ink) 78%, var(--accent))); color: var(--paper); border-radius: 16px; padding: 24px 26px; margin-bottom: 24px; scroll-margin-top: 16px; }
+    .killbar h2 { color: var(--paper); margin: 0 0 14px; font-size: 20px; }
+    .killbar .field { margin: 0 0 9px; font-size: .95rem; }
+    .killbar .field b { color: var(--accent); }
+    .killbar .rationale { margin-top: 12px; font-size: .86rem; opacity: .85; }
+
+    /* Chart container */
+    .chart-wrap { height: 220px; position: relative; }
+
+    /* Footer */
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .toc { position: static; }
+      .toc nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+    }
+    @media (max-width: 600px) {
+      .grid-2, .grid-3, .bull-bear, .lens-cols { grid-template-columns: 1fr; }
+      .ticker-badge { font-size: 32px; }
+      .toc nav { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sticky table of contents -->
+  <aside class="toc" aria-label="สารบัญ">
+    <strong>สารบัญ</strong>
+    <nav id="tocNav">
+      <a href="#exec">บทสรุป</a>
+      <a href="#financials">ผลประกอบการ</a>
+      <a href="#guidance">Guidance</a>
+      <a href="#growth">Growth Drivers</a>
+      <a href="#risks">ความเสี่ยง</a>
+      <a href="#bullbear">Bull/Bear</a>
+      <a href="#lens">Sector Lens</a>
+      <a href="#watch">Metrics</a>
+      <a href="#kill">Kill Price</a>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- Header -->
+    <div class="header">
+      <div class="eyebrow">Stock Research OS · 2026-09-30</div>
+      <div class="ticker-badge">CRM</div>
+      <div class="company-name">Salesforce, Inc.</div>
+      <div class="meta-row">
+        <span class="pill">Sector <b>Technology</b></span>
+        <span class="pill">Industry <b>Software - Application</b></span>
+        <span class="pill">Market Cap <b>N/A</b></span>
+        <span class="pill" style="color:var(--good);font-weight:700;background:var(--good-bg);padding:2px 10px;border-radius:12px;">Lynch: Stalwart → transitioning toward Fast Grower</span>
+      </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="exec-summary section" id="exec"></div>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label">Revenue (TTM)</div>
+        <div class="kpi-value">$43.9B</div>
+        <div class="kpi-change up">10.8% YoY</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Gross Margin</div>
+        <div class="kpi-value">77.3%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Operating Margin</div>
+        <div class="kpi-value">21.4%</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Free Cash Flow</div>
+        <div class="kpi-value">$17.7B</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">P/E (TTM)</div>
+        <div class="kpi-value">23.5x</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Forward P/E</div>
+        <div class="kpi-value">16.2x</div>
+      </div>
+      <div class="kpi" id="convictionKpi" hidden>
+        <div class="kpi-label">Conviction</div>
+        <div class="kpi-value" id="convictionValue"></div>
+        <div class="kpi-change down" id="convictionSub"></div>
+      </div>
+    </div>
+
+    <!-- Lynch Card -->
+      <div class="card section" style="border-left:3px solid var(--good);">
+    <div class="card-title" style="display:flex;align-items:center;gap:10px;">
+      Peter Lynch Classification
+      <span style="color:var(--good);font-weight:700;background:var(--good-bg);padding:2px 10px;border-radius:12px;">Fast Grower 🚀</span>
+    </div>
+    <p style="margin:0 0 10px;color:var(--muted);line-height:1.6;">Salesforce มีขนาด revenue $41.5B ในอุตสาหกรรม enterprise software ที่ mature ระดับหนึ่ง โดยปกติจะ classify เป็น Stalwart (10–12% growth, limited downside) แต่ Agentforce + Informatica กำลัง open new growth vector ที่อาจ push organic growth กลับไป 15–20% ได้ใน FY28–FY29 ถ้า AI monetization เป็นไปตามแผน จึงเป็น Stalwart ที่มี Fast Grower optionality ฝังอยู่</p>
+    <p style="margin:0;color:var(--muted);line-height:1.6;"><strong style="color:var(--good);">Implication:</strong> - PE alone ไม่เพียงพอ — ต้อง watch revenue re-acceleration กับ AI unit economics (ราคาต่อ agent/transaction) ด้วย
+- Downside ถูก cushion โดย FCF yield 10.5% และ buyback; ไม่ใช่ high-beta bet
+- Conviction ceiling ขึ้นอยู่กับว่า Agentforce จะ prove out TAM expansion ได้ภายใน 4–6 quarters หรือไม่ — ถ้าไม่ได้ก็กลับเป็น Stalwart ธรรมดาที่ valuation ไม่น่าตื่นเต้น
+
+---</p>
+  </div>
+
+    <!-- Financials anchor -->
+    <div id="financials"></div>
+
+    <!-- Charts Row 1: Annual -->
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-title">Annual Revenue — 5 Years ($B)</div>
+        <div class="chart-wrap"><canvas id="annualRevenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Annual Margins — 5 Years</div>
+        <div class="chart-wrap"><canvas id="annualMarginChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2: Quarterly -->
+    <div class="grid-2 section">
+      <div class="card">
+        <div class="card-title">Quarterly Revenue — 8 Quarters ($B)</div>
+        <div class="chart-wrap"><canvas id="quarterlyRevenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Quarterly YoY & QoQ Growth %</div>
+        <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Annual Table -->
+    <div class="section">
+      <div class="section-title">Annual Performance — 5 Years</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fiscal Year</th><th>Revenue</th><th>YoY</th>
+              <th>Gross Margin</th><th>Op. Margin</th>
+              <th>Net Income</th><th>FCF</th><th>EPS</th>
+            </tr>
+          </thead>
+          <tbody id="annualTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quarterly Table -->
+    <div class="section">
+      <div class="section-title">Quarterly Performance — 8 Quarters</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quarter</th><th>Revenue</th><th>YoY</th><th>QoQ</th>
+              <th>Gross Margin</th><th>Op. Margin</th>
+              <th>Net Income</th><th>FCF</th><th>EPS</th>
+            </tr>
+          </thead>
+          <tbody id="quarterlyTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Guidance Tracker -->
+    <div class="section" id="guidance">
+      <div class="section-title">Guidance Tracker</div>
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Metric</th>
+              <th>Guidance</th>
+              <th>Actual</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="guidanceTable">
+            <!-- Populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Growth Drivers -->
+    <div class="section" id="growth">
+      <div class="section-title">Key Growth Drivers</div>
+      <ol class="numbered growth-list" id="growthList"></ol>
+    </div>
+
+    <!-- Key Risks -->
+    <div class="section" id="risks">
+      <div class="section-title">Key Risks</div>
+      <ol class="numbered risk-list" id="riskList"></ol>
+    </div>
+
+    <!-- Bull / Bear -->
+    <div class="section" id="bullbear">
+      <div class="section-title">Bull vs Bear Case</div>
+      <div class="bull-bear">
+        <div class="bull-card">
+          <div class="card-title">Bull Case</div>
+          <ul class="case-list" id="bullList"></ul>
+        </div>
+        <div class="bear-card">
+          <div class="card-title">Bear Case</div>
+          <ul class="case-list" id="bearList"></ul>
+        </div>
+      </div>
+      <div class="edge-callout" id="edgeCallout" hidden>
+        <span class="edge-label">Edge / Non-Consensus View</span>
+        <span id="edgeText"></span>
+      </div>
+    </div>
+
+    <!-- Sector Lens -->
+    <div class="section" id="lens" hidden>
+      <div class="section-title">Sector Lens</div>
+      <div class="card">
+        <div class="lens-field"><span class="lens-label">Sector classification</span><span id="lensClassification"></span></div>
+        <div class="lens-field"><span class="lens-label">TAM &amp; runway</span><span id="lensTam"></span></div>
+        <div class="lens-field"><span class="lens-label">What the current price prices in</span><span id="lensPricedIn"></span></div>
+        <div class="lens-field"><span class="lens-label">Narrative</span><span id="lensNarrative"></span></div>
+        <div class="lens-cols">
+          <div>
+            <h4>Sector metrics this quarter</h4>
+            <ul class="tight" id="lensMetrics"></ul>
+          </div>
+          <div>
+            <h4>Still-open sector questions</h4>
+            <ul class="tight" id="lensQuestions"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Metrics to Watch -->
+    <div class="section" id="watch">
+      <div class="section-title">Key Metrics to Watch (Next Earnings)</div>
+      <div class="card" id="metricsWatch"></div>
+    </div>
+
+    <!-- Kill Price & Conviction -->
+    <div class="killbar" id="killbar" hidden>
+      <h2 id="kill">Kill Price &amp; Conviction</h2>
+      <p class="field"><b>Conviction:</b> <span id="killConviction"></span></p>
+      <p class="field"><b>Kill Price:</b> <span id="killPrice"></span></p>
+      <p class="field"><b>Kill Trigger (non-price):</b> <span id="killTrigger"></span></p>
+      <p class="rationale" id="killRationale"></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Stock Research OS — Generated 2026-09-30</span>
+      <span>Data: SEC EDGAR / SET + yfinance | Agents: Claude + MiniMax M2.7</span>
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── DATA (filled by generate_html.py) ──────────────────────────────────────
+const REPORT_DATA = {
+  "ticker": "CRM",
+  "company_name": "Salesforce, Inc.",
+  "sector": "Technology",
+  "industry": "Software - Application",
+  "market_cap": "N/A",
+  "report_date": "2026-09-30",
+  "revenue_ttm": "$43.9B",
+  "revenue_growth": "10.8%",
+  "gross_margin": "77.3%",
+  "op_margin": "21.4%",
+  "fcf_ttm": "$17.7B",
+  "pe_ratio": 23.5,
+  "fwd_pe": 16.2,
+  "annual_rows": [],
+  "quarters": [],
+  "guidance": [
+    {
+      "period": "Q3 FY26",
+      "metric": "Revenue",
+      "guidance": "$9.31\u2013$9.36B",
+      "actual": "$9.444B",
+      "result": "+1.17% \u2705"
+    },
+    {
+      "period": "Q4 FY26",
+      "metric": "Revenue",
+      "guidance": "$9.90\u2013$10.10B",
+      "actual": "$9.993B",
+      "result": "\u22120.07% \u27a1\ufe0f"
+    },
+    {
+      "period": "Q1 FY27",
+      "metric": "Revenue",
+      "guidance": "$11.03\u2013$11.08B",
+      "actual": "$11.133B",
+      "result": "+0.71% \u2705"
+    },
+    {
+      "period": "Q2 FY27",
+      "metric": "Revenue",
+      "guidance": "$11.27\u2013$11.35B",
+      "actual": "$11.345B",
+      "result": "+0.31% \u2705"
+    },
+    {
+      "period": "Q3 FY27",
+      "metric": "Revenue",
+      "guidance": "$11.42\u2013$11.50B",
+      "actual": "TBD",
+      "result": "\u2014"
+    },
+    {
+      "period": "Q3 FY27",
+      "metric": "EPS (GAAP)",
+      "guidance": "$1.81\u2013$1.83",
+      "actual": "TBD",
+      "result": "\u2014"
+    },
+    {
+      "period": "FY27 \u0e23\u0e32\u0e22\u0e1b\u0e35",
+      "metric": "Revenue",
+      "guidance": "$46.1\u2013$46.4B",
+      "actual": "TBD",
+      "result": "\u2014"
+    }
+  ],
+  "bull_case": [
+    "<strong>Scenario:</strong> Agentforce + Claudeforce monetize per-transaction; organic subscription growth \u0e40\u0e23\u0e48\u0e07\u0e15\u0e31\u0e27\u0e16\u0e36\u0e07 12\u201315% \u0e43\u0e19 FY28",
+    "<strong>Key assumption:</strong> cRPO +14% \u0e41\u0e1b\u0e25\u0e07\u0e40\u0e1b\u0e47\u0e19 organic revenue H2 FY27; Claudeforce \u0e14\u0e31\u0e19 new logo \u0e44\u0e14\u0e49\u0e08\u0e23\u0e34\u0e07",
+    "<strong>Price implication:</strong> $320\u2013$360 (P/S 3.5\u20134.0x \u0e1a\u0e19 $46B+ rev, Fast Grower confirmed)",
+    "<strong>Probability (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13):</strong> 45%"
+  ],
+  "bear_case": [
+    "<strong>Scenario:</strong> AI enterprise cycles \u0e43\u0e0a\u0e49\u0e40\u0e27\u0e25\u0e32 36+ \u0e40\u0e14\u0e37\u0e2d\u0e19; organic growth \u0e22\u0e31\u0e07 6\u20137%; gross margin \u0e2b\u0e14\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07",
+    "<strong>Key assumption:</strong> EPS beat deceleration (24%\u21925%) \u0e1a\u0e48\u0e07\u0e0a\u0e35\u0e49 consensus \u0e15\u0e32\u0e21 actual \u0e44\u0e14\u0e49\u0e41\u0e25\u0e49\u0e27; Q2 FY27 beat \u0e40\u0e1b\u0e47\u0e19 one-time \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 momentum",
+    "<strong>Price implication:</strong> $160\u2013$180 (P/S 2.5\u20132.8x \u0e1a\u0e19 ~$47B rev; Stalwart re-rating \u0e40\u0e17\u0e35\u0e22\u0e1a SAP/Oracle)",
+    "<strong>Probability (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13):</strong> 30% (25% base/status quo)"
+  ],
+  "key_metrics": [],
+  "lynch": {
+    "category": "Stalwart \u2192 transitioning toward Fast Grower",
+    "why": "Salesforce \u0e21\u0e35\u0e02\u0e19\u0e32\u0e14 revenue $41.5B \u0e43\u0e19\u0e2d\u0e38\u0e15\u0e2a\u0e32\u0e2b\u0e01\u0e23\u0e23\u0e21 enterprise software \u0e17\u0e35\u0e48 mature \u0e23\u0e30\u0e14\u0e31\u0e1a\u0e2b\u0e19\u0e36\u0e48\u0e07 \u0e42\u0e14\u0e22\u0e1b\u0e01\u0e15\u0e34\u0e08\u0e30 classify \u0e40\u0e1b\u0e47\u0e19 Stalwart (10\u201312% growth, limited downside) \u0e41\u0e15\u0e48 Agentforce + Informatica \u0e01\u0e33\u0e25\u0e31\u0e07 open new growth vector \u0e17\u0e35\u0e48\u0e2d\u0e32\u0e08 push organic growth \u0e01\u0e25\u0e31\u0e1a\u0e44\u0e1b 15\u201320% \u0e44\u0e14\u0e49\u0e43\u0e19 FY28\u2013FY29 \u0e16\u0e49\u0e32 AI monetization \u0e40\u0e1b\u0e47\u0e19\u0e44\u0e1b\u0e15\u0e32\u0e21\u0e41\u0e1c\u0e19 \u0e08\u0e36\u0e07\u0e40\u0e1b\u0e47\u0e19 Stalwart \u0e17\u0e35\u0e48\u0e21\u0e35 Fast Grower optionality \u0e1d\u0e31\u0e07\u0e2d\u0e22\u0e39\u0e48",
+    "implication": "- PE alone \u0e44\u0e21\u0e48\u0e40\u0e1e\u0e35\u0e22\u0e07\u0e1e\u0e2d \u2014 \u0e15\u0e49\u0e2d\u0e07 watch revenue re-acceleration \u0e01\u0e31\u0e1a AI unit economics (\u0e23\u0e32\u0e04\u0e32\u0e15\u0e48\u0e2d agent/transaction) \u0e14\u0e49\u0e27\u0e22\n- Downside \u0e16\u0e39\u0e01 cushion \u0e42\u0e14\u0e22 FCF yield 10.5% \u0e41\u0e25\u0e30 buyback; \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 high-beta bet\n- Conviction ceiling \u0e02\u0e36\u0e49\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e01\u0e31\u0e1a\u0e27\u0e48\u0e32 Agentforce \u0e08\u0e30 prove out TAM expansion \u0e44\u0e14\u0e49\u0e20\u0e32\u0e22\u0e43\u0e19 4\u20136 quarters \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48 \u2014 \u0e16\u0e49\u0e32\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e01\u0e47\u0e01\u0e25\u0e31\u0e1a\u0e40\u0e1b\u0e47\u0e19 Stalwart \u0e18\u0e23\u0e23\u0e21\u0e14\u0e32\u0e17\u0e35\u0e48 valuation \u0e44\u0e21\u0e48\u0e19\u0e48\u0e32\u0e15\u0e37\u0e48\u0e19\u0e40\u0e15\u0e49\u0e19\n\n---"
+  },
+  "exec_summary_html": "<p>Salesforce, Inc. \u0e04\u0e37\u0e2d\u0e1c\u0e39\u0e49\u0e19\u0e33\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e42\u0e25\u0e01\u0e14\u0e49\u0e32\u0e19 CRM software \u0e41\u0e1a\u0e1a cloud \u0e04\u0e23\u0e2d\u0e1a\u0e04\u0e25\u0e38\u0e21 Sales, Service, Marketing, Commerce, \u0e01\u0e32\u0e23\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 (Informatica) \u0e41\u0e25\u0e30 AI agents \u0e23\u0e30\u0e14\u0e31\u0e1a enterprise (Agentforce) \u0e40\u0e21\u0e37\u0e48\u0e2d\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 26 \u0e2a\u0e34\u0e07\u0e2b\u0e32\u0e04\u0e21 2026 \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e1c\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a\u0e01\u0e32\u0e23 (Earnings) \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a Q2 FY27 \u0e17\u0e35\u0e48\u0e17\u0e33\u0e2a\u0e16\u0e34\u0e15\u0e34\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 \u2014 \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 (Revenue) $11.35B (+10.8% YoY) \u0e40\u0e01\u0e34\u0e19\u0e01\u0e27\u0e48\u0e32\u0e40\u0e1e\u0e14\u0e32\u0e19 guidance \u0e41\u0e25\u0e30\u0e1b\u0e23\u0e31\u0e1a guidance \u0e23\u0e32\u0e22\u0e1b\u0e35 FY27 \u0e02\u0e36\u0e49\u0e19 $200M \u0e40\u0e1b\u0e47\u0e19 $46.1\u2013$46.4B \u0e2a\u0e34\u0e48\u0e07\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e19\u0e35\u0e49\u0e04\u0e37\u0e2d\u0e01\u0e32\u0e23\u0e1e\u0e34\u0e2a\u0e39\u0e08\u0e19\u0e4c\u0e27\u0e48\u0e32 Agentforce \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e41\u0e04\u0e48 hype \u2014 ARR \u0e41\u0e15\u0e30 $1.5B (+240% YoY) \u0e21\u0e35 agentic work units 3.2 \u0e1e\u0e31\u0e19\u0e25\u0e49\u0e32\u0e19\u0e43\u0e19 Q2 \u0e40\u0e1e\u0e35\u0e22\u0e07\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e40\u0e14\u0e35\u0e22\u0e27 \u0e19\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e19\u0e35\u0e49\u0e22\u0e31\u0e07\u0e21\u0e35\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 <strong>Claudeforce</strong> \u0e0b\u0e36\u0e48\u0e07\u0e40\u0e1b\u0e47\u0e19\u0e1c\u0e25\u0e34\u0e15\u0e20\u0e31\u0e13\u0e11\u0e4c\u0e23\u0e48\u0e27\u0e21\u0e23\u0e30\u0e2b\u0e27\u0e48\u0e32\u0e07 Salesforce \u0e41\u0e25\u0e30 Anthropic \u0e17\u0e35\u0e48\u0e19\u0e33 AI \u0e02\u0e2d\u0e07 Claude \u0e40\u0e02\u0e49\u0e32\u0e21\u0e32\u0e17\u0e33\u0e07\u0e32\u0e19\u0e42\u0e14\u0e22\u0e15\u0e23\u0e07\u0e43\u0e19 CRM workflow \u0e02\u0e2d\u0e07 enterprise \u0e01\u0e33\u0e2b\u0e19\u0e14 GA \u0e17\u0e35\u0e48\u0e07\u0e32\u0e19 Dreamforce \u0e40\u0e14\u0e37\u0e2d\u0e19\u0e1e\u0e24\u0e28\u0e08\u0e34\u0e01\u0e32\u0e22\u0e19 2026 \u0e43\u0e19\u0e10\u0e32\u0e19\u0e30 <strong>Stalwart \u0e17\u0e35\u0e48\u0e01\u0e33\u0e25\u0e31\u0e07 transition \u0e44\u0e1b\u0e40\u0e1b\u0e47\u0e19 Fast Grower</strong> \u0e15\u0e31\u0e27\u0e40\u0e25\u0e02 P/E \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e40\u0e14\u0e35\u0e22\u0e27\u0e44\u0e21\u0e48\u0e40\u0e1e\u0e35\u0e22\u0e07\u0e1e\u0e2d\u0e40\u0e1b\u0e47\u0e19 anchor \u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e21\u0e39\u0e25\u0e04\u0e48\u0e32 \u0e04\u0e33\u0e16\u0e32\u0e21\u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e04\u0e37\u0e2d Agentforce \u0e41\u0e25\u0e30 Claudeforce \u0e08\u0e30\u0e14\u0e31\u0e19 organic subscription growth \u0e08\u0e32\u0e01 ~6.8% (ex-Informatica) \u0e44\u0e1b\u0e16\u0e36\u0e07\u0e23\u0e30\u0e14\u0e31\u0e1a 10\u201312% \u0e17\u0e35\u0e48\u0e08\u0e30 justify \u0e01\u0e32\u0e23 re-rating \u0e44\u0e14\u0e49\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48 \u0e23\u0e32\u0e04\u0e32\u0e2b\u0e38\u0e49\u0e19\u0e1b\u0e23\u0e31\u0e1a\u0e15\u0e31\u0e27\u0e02\u0e36\u0e49\u0e19 +33% \u0e08\u0e32\u0e01 $192.19 \u0e01\u0e48\u0e2d\u0e19\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e1c\u0e25\u0e21\u0e32\u0e17\u0e35\u0e48 $256.00 \u0e41\u0e2a\u0e14\u0e07\u0e27\u0e48\u0e32\u0e15\u0e25\u0e32\u0e14\u0e44\u0e14\u0e49 price in optionality \u0e19\u0e35\u0e49\u0e44\u0e1b\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19\u0e41\u0e25\u0e49\u0e27 margin of safety \u0e41\u0e04\u0e1a\u0e25\u0e07 \u0e41\u0e25\u0e30 execution \u0e43\u0e19 H2 FY27 \u0e04\u0e37\u0e2d\u0e15\u0e31\u0e27\u0e41\u0e1b\u0e23\u0e0a\u0e35\u0e49\u0e02\u0e32\u0e14</p><p>---</p>",
+  "growth_html": "<ol><li><strong>Agentforce AI monetization \u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e1e\u0e34\u0e2a\u0e39\u0e08\u0e19\u0e4c\u0e41\u0e25\u0e49\u0e27:</strong> ARR \u0e41\u0e15\u0e30 $1.5B (+240% YoY) \u0e21\u0e35 3.2 \u0e1e\u0e31\u0e19\u0e25\u0e49\u0e32\u0e19 AWUs \u0e43\u0e19 Q2 (+97% QoQ) \u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e17\u0e35\u0e48\u0e21\u0e35 agent \u0e43\u0e19 production \u0e40\u0e15\u0e34\u0e1a\u0e42\u0e15 70% QoQ Agentforce bookings \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e36\u0e49\u0e19 2x YoY \u0e42\u0e14\u0e22 50% \u0e40\u0e1b\u0e47\u0e19 credit refill (recurring) \u2014 Agentforce \u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e08\u0e32\u0e01 narrative \u0e40\u0e1b\u0e47\u0e19 unit economics \u0e08\u0e23\u0e34\u0e07\u0e41\u0e25\u0e49\u0e27</li><li><strong>Claudeforce (Anthropic partnership \u2014 \u0e43\u0e2b\u0e21\u0e48):</strong> \u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 26 \u0e2a\u0e34\u0e07\u0e2b\u0e32\u0e04\u0e21 2026 Claudeforce \u0e19\u0e33 Claude AI \u0e02\u0e2d\u0e07 Anthropic \u0e40\u0e02\u0e49\u0e32\u0e21\u0e32 work \u0e42\u0e14\u0e22\u0e15\u0e23\u0e07\u0e43\u0e19 Salesforce CRM workflow Salesforce \u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25 customer \u0e02\u0e2d\u0e07 enterprise 10+ \u0e1b\u0e35 + Anthropic \u0e21\u0e35 frontier reasoning = AI layer \u0e17\u0e35\u0e48 Microsoft/Dynamics \u0e25\u0e2d\u0e01\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e40\u0e1e\u0e23\u0e32\u0e30\u0e44\u0e21\u0e48\u0e21\u0e35 underlying data asset \u0e40\u0e1b\u0e49\u0e32\u0e2b\u0e21\u0e32\u0e22 GA \u0e17\u0e35\u0e48 Dreamforce \u0e40\u0e14\u0e37\u0e2d\u0e19\u0e1e\u0e24\u0e28\u0e08\u0e34\u0e01\u0e32\u0e22\u0e19 2026</li><li><strong>cRPO +14% YoY CC (\u0e40\u0e23\u0e48\u0e07\u0e15\u0e31\u0e27):</strong> Current Remaining Performance Obligation $33.5B \u0e40\u0e15\u0e34\u0e1a\u0e42\u0e15 14% \u2014 \u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14\u0e43\u0e19 cycle \u0e41\u0e25\u0e30\u0e40\u0e1b\u0e47\u0e19 leading indicator \u0e02\u0e2d\u0e07\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 subscription 2\u20133 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e02\u0e49\u0e32\u0e07\u0e2b\u0e19\u0e49\u0e32 NNAOV (net new annual order value) \"\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e23\u0e2d\u0e1a 4 \u0e1b\u0e35\" \u0e15\u0e32\u0e21 management</li><li><strong>Informatica + Contentful/Fin acquisitions:</strong> Informatica \u0e21\u0e35\u0e2a\u0e48\u0e27\u0e19 contribution ~$456M \u0e43\u0e19 Q2 FY27 (~4 pts \u0e02\u0e2d\u0e07 growth \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14) \u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e01\u0e34\u0e08\u0e01\u0e32\u0e23 Contentful \u0e41\u0e25\u0e30 Fin \u0e04\u0e32\u0e14\u0e1b\u0e34\u0e14\u0e43\u0e19 Q3 FY27 contribute \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e35\u0e01 ~$200M \u0e43\u0e19 FY27 \u0e17\u0e33\u0e43\u0e2b\u0e49\u0e01\u0e32\u0e23\u0e41\u0e22\u0e01 organic/inorganic growth \u0e2a\u0e33\u0e04\u0e31\u0e0d\u0e02\u0e36\u0e49\u0e19\u0e40\u0e23\u0e37\u0e48\u0e2d\u0e22 \u0e46</li><li><strong>\u0e1c\u0e25\u0e15\u0e2d\u0e1a\u0e41\u0e17\u0e19\u0e1c\u0e39\u0e49\u0e16\u0e37\u0e2d\u0e2b\u0e38\u0e49\u0e19 + operating leverage:</strong> ASR \u0e40\u0e09\u0e25\u0e35\u0e48\u0e22 $176/\u0e2b\u0e38\u0e49\u0e19 (vs $256 \u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19) accretive \u0e43\u0e19\u0e17\u0e32\u0e07\u0e17\u0e24\u0e29\u0e0e\u0e35\u0e41\u0e25\u0e49\u0e27 Non-GAAP operating margin Q2 FY27 = 34.1% \u0e2a\u0e2d\u0e14\u0e04\u0e25\u0e49\u0e2d\u0e07\u0e01\u0e31\u0e1a target 34.3% \u0e01\u0e32\u0e23\u0e25\u0e14\u0e08\u0e33\u0e19\u0e27\u0e19\u0e2b\u0e38\u0e49\u0e19 (~14% of shares outstanding) \u0e0a\u0e48\u0e27\u0e22 boost EPS per share \u0e41\u0e21\u0e49 earnings \u0e40\u0e17\u0e48\u0e32\u0e40\u0e14\u0e34\u0e21</li></ol>",
+  "risks_html": "<ol><li><strong>Organic growth \u0e15\u0e48\u0e33\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e23\u0e2d\u0e1a cycle (~6.8% ex-Informatica):</strong> Revenue Q2 FY27 +10.8% \u0e23\u0e27\u0e21 Informatica ~$456M (~4 pts) \u0e16\u0e49\u0e32\u0e2b\u0e31\u0e01 inorganic \u0e41\u0e25\u0e49\u0e27 organic subscription growth \u0e2d\u0e22\u0e39\u0e48\u0e17\u0e35\u0e48 ~6.8% \u2014 \u0e15\u0e48\u0e33\u0e2a\u0e38\u0e14\u0e43\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e35\u0e48\u0e21\u0e35 thesis re-acceleration \u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e43\u0e2b\u0e49\u0e15\u0e31\u0e27\u0e40\u0e25\u0e02\u0e19\u0e35\u0e49\u0e02\u0e49\u0e32\u0e21 9% \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e1e\u0e34\u0e2a\u0e39\u0e08\u0e19\u0e4c\u0e27\u0e48\u0e32 Agentforce + Claudeforce \u0e2a\u0e23\u0e49\u0e32\u0e07 demand \u0e43\u0e2b\u0e21\u0e48\u0e08\u0e23\u0e34\u0e07 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e41\u0e04\u0e48\u0e0a\u0e14\u0e40\u0e0a\u0e22 Informatica treadmill</li><li><strong>\u0e20\u0e32\u0e23\u0e30\u0e2b\u0e19\u0e35\u0e49 (Debt burden) \u0e08\u0e33\u0e01\u0e31\u0e14 flexibility:</strong> \u0e2b\u0e19\u0e35\u0e49\u0e2a\u0e34\u0e19\u0e23\u0e27\u0e21 ~$42.4B \u0e17\u0e35\u0e48\u0e15\u0e49\u0e19\u0e17\u0e38\u0e19 ~5% = \u0e14\u0e2d\u0e01\u0e40\u0e1a\u0e35\u0e49\u0e22\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 ~$2.1B/\u0e1b\u0e35 \u0e23\u0e27\u0e21\u0e01\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e1b\u0e31\u0e19\u0e1c\u0e25 (Dividends) ~$1.6B/\u0e1b\u0e35 \u0e23\u0e27\u0e21 fixed cash outflows ~$3.7B/\u0e1b\u0e35 \u0e15\u0e48\u0e2d TTM FCF $17.7B \u2014 \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e44\u0e14\u0e49\u0e15\u0e2d\u0e19\u0e19\u0e35\u0e49 \u0e41\u0e15\u0e48\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2b\u0e49\u0e2d\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a M&A \u0e02\u0e19\u0e32\u0e14\u0e43\u0e2b\u0e0d\u0e48 \u0e41\u0e25\u0e30\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07\u0e16\u0e49\u0e32 FCF growth \u0e0a\u0e30\u0e25\u0e2d\u0e15\u0e31\u0e27</li><li><strong>Professional Services \u0e40\u0e1b\u0e47\u0e19 leading indicator:</strong> \u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 PS \u0e25\u0e14\u0e25\u0e07\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07 4 \u0e1b\u0e35\u0e15\u0e34\u0e14: FY23 $2,331M \u2192 FY24 $2,320M \u2192 FY25 $2,216M \u2192 FY26 $2,137M (\u0e23\u0e27\u0e21 \u22128.3%) PS implementation \u0e19\u0e33\u0e2b\u0e19\u0e49\u0e32 subscription expansion 12\u201318 \u0e40\u0e14\u0e37\u0e2d\u0e19 4 \u0e1b\u0e35\u0e17\u0e35\u0e48\u0e25\u0e14\u0e15\u0e48\u0e2d\u0e40\u0e19\u0e37\u0e48\u0e2d\u0e07\u0e1a\u0e48\u0e07\u0e0a\u0e35\u0e49\u0e27\u0e48\u0e32 enterprise footprint expansion \u0e0a\u0e30\u0e25\u0e2d Q2 FY27 \u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 PS ~$534M \u0e14\u0e39 flat YoY \u2014 \u0e2a\u0e48\u0e07\u0e2a\u0e31\u0e0d\u0e0d\u0e32\u0e13 stabilization \u0e41\u0e15\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 reversal</li><li><strong>Gross Margin \u0e2b\u0e14:</strong> \u0e25\u0e14\u0e08\u0e32\u0e01\u0e08\u0e38\u0e14\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 78.1% (Q2 FY26) \u2192 76.7% (Q2 FY27) = \u2212143bps \u0e43\u0e19 4 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a Informatica (margin \u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32), infrastructure \u0e02\u0e2d\u0e07 Claudeforce \u0e41\u0e25\u0e30 price concession \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e23\u0e31\u0e01\u0e29\u0e32\u0e10\u0e32\u0e19\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e43\u0e19\u0e15\u0e25\u0e32\u0e14\u0e41\u0e02\u0e48\u0e07\u0e02\u0e31\u0e19\u0e2a\u0e39\u0e07 \u0e2d\u0e32\u0e08\u0e14\u0e31\u0e19 margin \u0e15\u0e48\u0e2d\u0e44\u0e1b\u0e2d\u0e35\u0e01 \u0e16\u0e49\u0e32\u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 76% \u0e15\u0e34\u0e14\u0e01\u0e31\u0e19 2 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e04\u0e37\u0e2d\u0e2a\u0e31\u0e0d\u0e0d\u0e32\u0e13\u0e2d\u0e31\u0e19\u0e15\u0e23\u0e32\u0e22</li><li><strong>\u0e1c\u0e34\u0e14\u0e1b\u0e01\u0e15\u0e34\u0e02\u0e2d\u0e07 GAAP EPS Q2 FY27:</strong> \u0e01\u0e33\u0e44\u0e23\u0e2a\u0e38\u0e17\u0e18\u0e34 $3,526M \u0e2a\u0e39\u0e07\u0e01\u0e27\u0e48\u0e32 operating income $2,331M \u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13 $1.2B \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e19\u0e35\u0e49 inflate EPS (+119% YoY) \u0e44\u0e21\u0e48\u0e04\u0e27\u0e23 extrapolate \u0e40\u0e1b\u0e47\u0e19 run-rate \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e2b\u0e19\u0e49\u0e32\u0e19\u0e48\u0e32\u0e08\u0e30\u0e01\u0e25\u0e31\u0e1a\u0e44\u0e1b\u0e0a\u0e48\u0e27\u0e07 $2.0\u20132.5B</li></ol>",
+  "edge_html": "\u0e01\u0e48\u0e2d\u0e19\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 26 \u0e2a\u0e34\u0e07\u0e2b\u0e32\u0e04\u0e21 2026 \u0e15\u0e25\u0e32\u0e14\u0e21\u0e2d\u0e07 CRM \u0e40\u0e1b\u0e47\u0e19 Stalwart \u0e17\u0e35\u0e48 Agentforce \u0e22\u0e31\u0e07 hype \u0e21\u0e32\u0e01\u0e01\u0e27\u0e48\u0e32 revenue \u0e08\u0e23\u0e34\u0e07 \u2014 Munger \u0e43\u0e2b\u0e49 verdict PASS \u0e17\u0e35\u0e48 $192.19 \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e16\u0e39\u0e01\u0e15\u0e49\u0e2d\u0e07 \u0e2a\u0e34\u0e48\u0e07\u0e17\u0e35\u0e48\u0e15\u0e25\u0e32\u0e14\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 price in \u0e01\u0e48\u0e2d\u0e19 Q2 FY27 earnings \u0e04\u0e37\u0e2d: (1) Agentforce ARR $1.5B (+240% YoY) \u0e1e\u0e23\u0e49\u0e2d\u0e21 consumption metrics \u0e08\u0e23\u0e34\u0e07 \u2014 \u0e19\u0e35\u0e48\u0e04\u0e37\u0e2d revenue verification \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 launch announcement; (2) Claudeforce \u0e23\u0e48\u0e27\u0e21\u0e01\u0e31\u0e1a Anthropic \u0e0b\u0e36\u0e48\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07 AI reasoning layer \u0e1a\u0e19 top \u0e02\u0e2d\u0e07 Salesforce enterprise data asset \u2014 \u0e2a\u0e34\u0e48\u0e07\u0e17\u0e35\u0e48 Microsoft, ServiceNow, SAP \u0e17\u0e33\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e04\u0e23\u0e2d\u0e07\u0e10\u0e32\u0e19 CRM data \u0e01\u0e48\u0e2d\u0e19 \u0e21\u0e38\u0e21\u0e21\u0e2d\u0e07\u0e02\u0e2d\u0e07\u0e40\u0e23\u0e32\u0e04\u0e37\u0e2d\u0e15\u0e25\u0e32\u0e14 underestimate \u0e04\u0e27\u0e32\u0e21\u0e17\u0e19\u0e17\u0e32\u0e19\u0e02\u0e2d\u0e07 data moat \u0e40\u0e21\u0e37\u0e48\u0e2d\u0e23\u0e27\u0e21\u0e01\u0e31\u0e1a frontier reasoning model \u0e40\u0e23\u0e32\u0e08\u0e30\u0e23\u0e39\u0e49\u0e1c\u0e25\u0e43\u0e19 Q3 FY27 earnings (\u0e18\u0e31\u0e19\u0e27\u0e32\u0e04\u0e21 2026) \u2014 \u0e16\u0e49\u0e32 organic subscription growth (ex-Informatica, ex-Contentful/Fin) \u22659% \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 Fast Grower transition \u0e41\u0e25\u0e30 $256 understate intrinsic value \u0e16\u0e49\u0e32 organic growth \u0e22\u0e31\u0e07 6\u20137% \u0e40\u0e1b\u0e47\u0e19\u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a\u0e17\u0e35\u0e48 3 territory PASS \u0e22\u0e31\u0e07\u0e04\u0e07\u0e2d\u0e22\u0e39\u0e48 ---",
+  "sector_lens": {
+    "classification": "",
+    "tam": "",
+    "priced_in": "",
+    "narrative": "",
+    "metrics": [],
+    "questions": []
+  },
+  "kill_price": {
+    "conviction": "Medium",
+    "kill_price": "$195.00 \u2014 \u0e16\u0e49\u0e32 CRM \u0e1b\u0e23\u0e31\u0e1a\u0e15\u0e31\u0e27\u0e25\u0e07\u0e01\u0e25\u0e31\u0e1a\u0e44\u0e1b\u0e01\u0e48\u0e2d\u0e19\u0e23\u0e30\u0e14\u0e31\u0e1a Q2 FY27 earnings \u0e2b\u0e21\u0e32\u0e22\u0e04\u0e27\u0e32\u0e21\u0e27\u0e48\u0e32\u0e15\u0e25\u0e32\u0e14\u0e1b\u0e0f\u0e34\u0e40\u0e2a\u0e18 Agentforce monetization thesis \u0e2d\u0e22\u0e48\u0e32\u0e07\u0e40\u0e15\u0e47\u0e21\u0e15\u0e31\u0e27\u0e41\u0e25\u0e30\u0e01\u0e33\u0e25\u0e31\u0e07 reprice \u0e1a\u0e23\u0e34\u0e29\u0e31\u0e17\u0e40\u0e1b\u0e47\u0e19 pure Stalwart \u0e17\u0e35\u0e48 multiple \u0e40\u0e17\u0e48\u0e32\u0e01\u0e31\u0e1a SAP/Oracle (~2.5x P/S \u0e1a\u0e19 ~$47B forward revenue \u2248 market cap ~$118B \u0e2b\u0e23\u0e37\u0e2d ~$140\u2013$150/\u0e2b\u0e38\u0e49\u0e19)",
+    "kill_trigger": "Organic subscription revenue growth (ex-Informatica, ex-Contentful/Fin) \u0e15\u0e48\u0e33\u0e01\u0e27\u0e48\u0e32 8% \u0e15\u0e34\u0e14\u0e01\u0e31\u0e19 2 \u0e44\u0e15\u0e23\u0e21\u0e32\u0e2a (Q3 FY27 + Q4 FY27) \u0e42\u0e14\u0e22\u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e21\u0e35\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e38\u0e07 Agentforce paying-logo metrics \u0e2b\u0e23\u0e37\u0e2d Claudeforce enterprise adoption data \u2014 \u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e27\u0e48\u0e32 Fast Grower transition thesis \u0e25\u0e49\u0e21\u0e40\u0e2b\u0e25\u0e27",
+    "rationale": ""
+  },
+  "munger_verdict": ""
+};
+
+// ─── THEME-AWARE CHART COLORS ────────────────────────────────────────────────
+const cs = getComputedStyle(document.documentElement);
+const tok = name => cs.getPropertyValue(name).trim();
+const COLORS = {
+  ink: tok('--ink'), muted: tok('--muted'), line: tok('--line'),
+  accent: tok('--accent'), accent2: tok('--accent2'), good: tok('--good'), danger: tok('--danger'),
+};
+
+const cd = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: COLORS.muted, font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: COLORS.muted, font: { size: 11 } }, grid: { color: COLORS.line } },
+    y: { ticks: { color: COLORS.muted, font: { size: 11 } }, grid: { color: COLORS.line } }
+  }
+};
+
+const annual   = [...REPORT_DATA.annual_rows].reverse();
+const quarters = [...REPORT_DATA.quarters].reverse();
+
+new Chart(document.getElementById('annualRevenueChart'), {
+  type: 'bar',
+  data: { labels: annual.map(a => a.label),
+    datasets: [{ label: 'Revenue ($B)', data: annual.map(a => a.revenue_b), backgroundColor: COLORS.accent2, borderRadius: 4 }] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('annualMarginChart'), {
+  type: 'line',
+  data: { labels: annual.map(a => a.label),
+    datasets: [
+      { label: 'Gross', data: annual.map(a => a.gross_margin_pct), borderColor: COLORS.good, tension: 0.3, fill: false },
+      { label: 'Op.',   data: annual.map(a => a.op_margin_pct),    borderColor: COLORS.accent2, tension: 0.3, fill: false },
+      { label: 'Net',   data: annual.map(a => a.net_margin_pct),   borderColor: COLORS.accent, tension: 0.3, fill: false },
+    ] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('quarterlyRevenueChart'), {
+  type: 'bar',
+  data: { labels: quarters.map(q => q.label),
+    datasets: [{ label: 'Revenue ($B)', data: quarters.map(q => q.revenue_b),
+      backgroundColor: quarters.map((_, i, a) => i === a.length - 1 ? COLORS.accent : COLORS.accent2), borderRadius: 4 }] },
+  options: { ...cd }
+});
+
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: { labels: quarters.map(q => q.label),
+    datasets: [
+      { label: 'YoY %', data: quarters.map(q => q.yoy_growth), borderColor: COLORS.good, tension: 0.3, fill: false },
+      { label: 'QoQ %', data: quarters.map(q => q.qoq_growth || 0), borderColor: COLORS.accent, tension: 0.3, fill: false, borderDash: [4,4] },
+    ] },
+  options: { ...cd }
+});
+
+// ─── EXECUTIVE SUMMARY ────────────────────────────────────────────────────────
+document.getElementById('exec').innerHTML = REPORT_DATA.exec_summary_html || '';
+
+// ─── ANNUAL / QUARTERLY TABLES ─────────────────────────────────────────────────
+const atbody = document.getElementById('annualTable');
+REPORT_DATA.annual_rows.forEach(a => {
+  const yoy = a.yoy_growth > 0 ? `<span class="up">+${a.yoy_growth}%</span>` : a.yoy_growth < 0 ? `<span class="down">${a.yoy_growth}%</span>` : '—';
+  atbody.innerHTML += `<tr><td><b>${a.label}</b></td><td>$${a.revenue_b}B</td><td>${yoy}</td><td>${a.gross_margin_pct}%</td><td>${a.op_margin_pct}%</td><td>$${a.net_income_b}B</td><td>${a.fcf_b ? '$'+a.fcf_b+'B' : '—'}</td><td>${a.eps != null ? '$'+a.eps : 'N/A'}</td></tr>`;
+});
+
+const qtbody = document.getElementById('quarterlyTable');
+REPORT_DATA.quarters.forEach(q => {
+  const yoy = q.yoy_growth > 0 ? `<span class="up">+${q.yoy_growth}%</span>` : q.yoy_growth < 0 ? `<span class="down">${q.yoy_growth}%</span>` : '—';
+  const qoq = q.qoq_growth > 0 ? `<span class="up">+${q.qoq_growth}%</span>` : q.qoq_growth < 0 ? `<span class="down">${q.qoq_growth}%</span>` : '—';
+  qtbody.innerHTML += `<tr><td><b>${q.label}</b></td><td>$${q.revenue_b}B</td><td>${yoy}</td><td>${qoq}</td><td>${q.gross_margin_pct}%</td><td>${q.op_margin_pct}%</td><td>${q.net_income_b ? '$'+q.net_income_b+'B' : '—'}</td><td>${q.fcf_b ? '$'+q.fcf_b+'B' : '—'}</td><td>${q.eps}</td></tr>`;
+});
+
+// ─── GUIDANCE TABLE ───────────────────────────────────────────────────────────
+const gtbody = document.getElementById('guidanceTable');
+REPORT_DATA.guidance.forEach(g => {
+  const r = (g.result || '').toLowerCase();
+  const cls = r.includes('beat') ? 'beat' : r.includes('miss') ? 'miss' : (r.includes('inline') || r.includes('in-line')) ? 'inline-r' : 'neutral';
+  gtbody.innerHTML += `<tr><td>${g.period}</td><td>${g.metric}</td><td>${g.guidance}</td><td>${g.actual}</td><td><span class="${cls}">${g.result || '—'}</span></td></tr>`;
+});
+
+// ─── GROWTH DRIVERS / KEY RISKS (shared <ol><li> HTML from the parser) ────────
+document.getElementById('growthList').innerHTML = (REPORT_DATA.growth_html || '').replace(/^<ol>|<\/ol>$/g, '');
+document.getElementById('riskList').innerHTML = (REPORT_DATA.risks_html || '').replace(/^<ol>|<\/ol>$/g, '');
+
+// ─── BULL / BEAR + EDGE ─────────────────────────────────────────────────────────
+const bullList = document.getElementById('bullList');
+REPORT_DATA.bull_case.forEach(b => { bullList.innerHTML += `<li>${b}</li>`; });
+const bearList = document.getElementById('bearList');
+REPORT_DATA.bear_case.forEach(b => { bearList.innerHTML += `<li>${b}</li>`; });
+if (REPORT_DATA.edge_html) {
+  document.getElementById('edgeCallout').hidden = false;
+  document.getElementById('edgeText').innerHTML = REPORT_DATA.edge_html;
+}
+
+// ─── SECTOR LENS ───────────────────────────────────────────────────────────────
+const lens = REPORT_DATA.sector_lens || {};
+if (lens.classification || lens.tam || lens.narrative) {
+  document.getElementById('lens').hidden = false;
+  document.getElementById('lensClassification').innerHTML = lens.classification || '—';
+  document.getElementById('lensTam').innerHTML = lens.tam || '—';
+  document.getElementById('lensPricedIn').innerHTML = lens.priced_in || '—';
+  document.getElementById('lensNarrative').innerHTML = lens.narrative || '—';
+  const lm = document.getElementById('lensMetrics');
+  (lens.metrics || []).forEach(m => { lm.innerHTML += `<li>${m}</li>`; });
+  const lq = document.getElementById('lensQuestions');
+  (lens.questions || []).forEach(q => { lq.innerHTML += `<li>${q}</li>`; });
+}
+
+// ─── KEY METRICS ──────────────────────────────────────────────────────────────
+const metricsWrap = document.getElementById('metricsWatch');
+REPORT_DATA.key_metrics.forEach(m => {
+  metricsWrap.innerHTML += `<div class="metric-row"><span class="metric-name">${m.name}</span><span class="metric-threshold">${m.threshold}</span></div>`;
+});
+
+// ─── KILL PRICE & CONVICTION ────────────────────────────────────────────────────
+const kp = REPORT_DATA.kill_price || {};
+if (kp.conviction || kp.kill_price) {
+  document.getElementById('killbar').hidden = false;
+  document.getElementById('killConviction').innerHTML = kp.conviction || '—';
+  document.getElementById('killPrice').innerHTML = kp.kill_price || '—';
+  document.getElementById('killTrigger').innerHTML = kp.kill_trigger || '—';
+  document.getElementById('killRationale').innerHTML = kp.rationale || '';
+}
+if (kp.conviction) {
+  // strip HTML tags for the compact stat-tile value (e.g. "<strong>Medium</strong>" -> "Medium")
+  const plainConviction = kp.conviction.replace(/<[^>]+>/g, '').trim();
+  const verdict = REPORT_DATA.munger_verdict || '—';
+  const subEl = document.getElementById('convictionSub');
+  document.getElementById('convictionKpi').hidden = false;
+  document.getElementById('convictionValue').textContent = plainConviction;
+  subEl.textContent = 'Munger: ' + verdict;
+  subEl.className = 'kpi-change ' + (verdict.toUpperCase() === 'BUY' ? 'up' : verdict ? 'down' : 'neutral');
+}
+
+// ─── TOC SCROLL-SPY ───────────────────────────────────────────────────────────
+const tocLinks = Array.from(document.querySelectorAll('#tocNav a'));
+const targets = tocLinks.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+if ('IntersectionObserver' in window && targets.length) {
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        tocLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  targets.forEach(t => obs.observe(t));
+}
+</script>
+</body>
+</html>
