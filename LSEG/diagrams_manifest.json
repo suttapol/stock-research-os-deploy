@@ -1,0 +1,13 @@
+{
+  "ticker": "LSEG",
+  "built": "2026-10-03",
+  "figures": [
+    {
+      "id": "eps_scenario",
+      "after_heading": "scenario",
+      "title_th": "การประเมินมูลค่า · Scenario Fan เป้าราคา",
+      "caption_th": "เป้าราคาแต่ละ scenario วางบนเส้นราคาเดียวกับราคาปัจจุบัน — เห็น asymmetry ของ downside/upside",
+      "png": "diagrams/eps_scenario.png"
+    }
+  ]
+}

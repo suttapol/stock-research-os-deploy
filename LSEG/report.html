@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LSEG Research Report — Stock Research OS</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3348;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --green: #22c55e;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --yellow: #f59e0b;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; }
+    a { color: var(--blue); text-decoration: none; }
+
+    /* Layout */
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    /* Header */
+    .header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; }
+    .ticker-badge { font-size: 28px; font-weight: 700; color: var(--blue); }
+    .company-name { font-size: 18px; color: var(--muted); margin-top: 2px; }
+    .meta-row { display: flex; gap: 24px; margin-top: 12px; flex-wrap: wrap; }
+    .meta-item { display: flex; flex-direction: column; }
+    .meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    .meta-value { font-size: 15px; font-weight: 600; }
+
+    /* Cards */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+    .card-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; font-weight: 600; }
+
+    /* KPI boxes */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi-value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+    .kpi-change { font-size: 12px; margin-top: 2px; }
+    .up { color: var(--green); }
+    .down { color: var(--red); }
+    .neutral { color: var(--muted); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .beat { color: var(--green); font-weight: 600; }
+    .miss { color: var(--red); font-weight: 600; }
+    .inline { color: var(--yellow); }
+
+    /* Section headers */
+    .section { margin-bottom: 24px; }
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+    /* Bull / Bear */
+    .bull-bear { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bull-card { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); border-radius: 10px; padding: 16px; }
+    .bear-card { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 10px; padding: 16px; }
+    .bull-card .card-title { color: var(--green); }
+    .bear-card .card-title { color: var(--red); }
+    ul.case-list { padding-left: 18px; }
+    ul.case-list li { margin-bottom: 6px; font-size: 13px; }
+
+    /* Metrics watchlist */
+    .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-name { font-weight: 500; }
+    .metric-threshold { font-family: monospace; font-size: 12px; background: var(--surface2); padding: 2px 8px; border-radius: 4px; color: var(--blue); }
+
+    /* Chart container */
+    .chart-wrap { height: 220px; position: relative; }
+
+    /* Footer */
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .tab { padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; border: 1px solid var(--border); background: transparent; color: var(--muted); }
+    .tab.active { background: var(--blue); color: white; border-color: var(--blue); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="ticker-badge">LSEG</div>
+    <div class="company-name">London Stock Exchange Group plc</div>
+    <div class="meta-row">
+      <div class="meta-item"><span class="meta-label">Sector</span><span class="meta-value">Financial Services</span></div>
+      <div class="meta-item"><span class="meta-label">Industry</span><span class="meta-value">Financial Data & Stock Exchanges</span></div>
+      <div class="meta-item"><span class="meta-label">Market Cap</span><span class="meta-value">N/A</span></div>
+      <div class="meta-item"><span class="meta-label">Report Date</span><span class="meta-value">2026-08-23</span></div>
+      <div class="meta-item"><span class="meta-label">Lynch Type</span><span class="meta-value" style="color:#93c5fd;font-weight:700;background:rgba(59,130,246,0.15);padding:2px 10px;border-radius:12px;">Stalwart</span></div>
+    </div>
+  </div>
+
+  <!-- KPI Row -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-label">Revenue (TTM)</div>
+      <div class="kpi-value">$9.7B</div>
+      <div class="kpi-change up">6.7% YoY</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Gross Margin</div>
+      <div class="kpi-value">88.7%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Operating Margin</div>
+      <div class="kpi-value">29.0%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Free Cash Flow</div>
+      <div class="kpi-value">$1.7B</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">P/E (TTM)</div>
+      <div class="kpi-value">30.9x</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Forward P/E</div>
+      <div class="kpi-value">15.9x</div>
+    </div>
+  </div>
+
+  <!-- Lynch Card -->
+    <div class="card section" style="border-left:3px solid #93c5fd;">
+    <div class="card-title" style="display:flex;align-items:center;gap:10px;">
+      Peter Lynch Classification
+      <span style="color:#93c5fd;font-weight:700;background:rgba(59,130,246,0.15);padding:2px 10px;border-radius:12px;">Stalwart 🏛️</span>
+    </div>
+    <p style="margin:0 0 10px;color:#cbd5e1;line-height:1.6;">LSEG's annual revenue growth has stabilised at ~5–7% — consistent with a large, mature financial infrastructure company, not a fast grower. Founded in 1698, it operates irreplaceable exchange and clearing utilities. The business is well-known, predominantly subscription-based, and trades at a P/E of ~31x (trailing) with moderate forward growth expectations. This is not a cyclical: revenues are structurally recurring and largely non-correlated to market volumes (index licensing, data subscriptions, KYC tools dominate).</p>
+    <p style="margin:0;color:#cbd5e1;line-height:1.6;"><strong style="color:#93c5fd;">Implication:</strong> As a Stalwart, the primary driver of returns is valuation discipline — buy at a reasonable multiple, sell when it becomes extended. The current forward P/E of ~16x is below historical range (the stock traded at 25–29x forward in 2023–2024), suggesting the market has re-priced it down. The alpha case here is not growth acceleration but margin expansion + buyback compounding revaluing an underappreciated platform. The conviction ceiling for a Stalwart is limited — LSEG is unlikely to be a 3x stock; the realistic outcome is 10–15% annualised return with lower downside volatility than a Fast Grower.
+
+---</p>
+  </div>
+
+  <!-- Charts Row 1: Annual -->
+  <div class="grid-2 section">
+    <div class="card">
+      <div class="card-title">Annual Revenue — 5 Years ($B)</div>
+      <div class="chart-wrap"><canvas id="annualRevenueChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Annual Margins — 5 Years</div>
+      <div class="chart-wrap"><canvas id="annualMarginChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2: Quarterly -->
+  <div class="grid-2 section">
+    <div class="card">
+      <div class="card-title">Quarterly Revenue — 8 Quarters ($B)</div>
+      <div class="chart-wrap"><canvas id="quarterlyRevenueChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Quarterly YoY & QoQ Growth %</div>
+      <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Annual Table -->
+  <div class="section">
+    <div class="section-title">Annual Performance — 5 Years</div>
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fiscal Year</th><th>Revenue</th><th>YoY</th>
+            <th>Gross Margin</th><th>Op. Margin</th>
+            <th>Net Income</th><th>FCF</th><th>EPS</th>
+          </tr>
+        </thead>
+        <tbody id="annualTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Quarterly Table -->
+  <div class="section">
+    <div class="section-title">Quarterly Performance — 8 Quarters</div>
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Quarter</th><th>Revenue</th><th>YoY</th><th>QoQ</th>
+            <th>Gross Margin</th><th>Op. Margin</th>
+            <th>Net Income</th><th>FCF</th><th>EPS</th>
+          </tr>
+        </thead>
+        <tbody id="quarterlyTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Guidance Tracker -->
+  <div class="section">
+    <div class="section-title">Guidance Tracker</div>
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Metric</th>
+            <th>Guidance</th>
+            <th>Actual</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody id="guidanceTable">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bull / Bear -->
+  <div class="section">
+    <div class="section-title">Bull vs Bear Case</div>
+    <div class="bull-bear">
+      <div class="bull-card">
+        <div class="card-title">Bull Case</div>
+        <ul class="case-list" id="bullList">
+          <!-- Populated by JS -->
+        </ul>
+      </div>
+      <div class="bear-card">
+        <div class="card-title">Bear Case</div>
+        <ul class="case-list" id="bearList">
+          <!-- Populated by JS -->
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics to Watch -->
+  <div class="section">
+    <div class="section-title">Key Metrics to Watch (Next Earnings)</div>
+    <div class="card" id="metricsWatch">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Stock Research OS — Generated 2026-08-23</span>
+    <span>Data: SEC EDGAR + yfinance | Agents: Claude + MiniMax M2.7</span>
+  </div>
+
+</div>
+
+<script>
+// ─── DATA (filled by generate_html.py) ──────────────────────────────────────
+const REPORT_DATA = {
+  "ticker": "LSEG",
+  "company_name": "London Stock Exchange Group plc",
+  "sector": "Financial Services",
+  "industry": "Financial Data & Stock Exchanges",
+  "market_cap": "N/A",
+  "report_date": "2026-08-23",
+  "revenue_ttm": "$9.7B",
+  "revenue_growth": "6.7%",
+  "gross_margin": "88.7%",
+  "op_margin": "29.0%",
+  "fcf_ttm": "$1.7B",
+  "pe_ratio": 30.9,
+  "fwd_pe": 15.9,
+  "annual_rows": [],
+  "quarters": [],
+  "guidance": [
+    {
+      "period": "FY2026",
+      "metric": "Revenue",
+      "guidance": "\u2014",
+      "actual": "$215.9B",
+      "result": "\u2014"
+    }
+  ],
+  "bull_case": [
+    "Blackwell GPU ramp \u2014 next-gen datacenter demand still in early innings",
+    "Sovereign AI spending by governments globally is a multi-year tailwind",
+    "CUDA ecosystem moat deepens with every new developer and model trained",
+    "Networking segment (InfiniBand/Ethernet) growing alongside compute"
+  ],
+  "bear_case": [
+    "Export controls on H20 to China cost $4.5B in FY2026 \u2014 more restrictions possible",
+    "Gross margin under pressure from Blackwell product mix shift",
+    "AMD MI350/MI400 + custom silicon (Google TPU, Amazon Trainium) eroding share",
+    "AI spending concentration risk \u2014 top customers represent large % of revenue"
+  ],
+  "key_metrics": [
+    {
+      "name": "Q2 FY2027 Revenue",
+      "threshold": "> $88B (consensus $88.7B)"
+    },
+    {
+      "name": "Data Center Revenue",
+      "threshold": "> $75B"
+    },
+    {
+      "name": "Gross Margin",
+      "threshold": "> 71% (H20 charge anniversary)"
+    },
+    {
+      "name": "Blackwell supply commentary",
+      "threshold": "watch for 'supply constrained' vs 'demand-led'"
+    },
+    {
+      "name": "EPS Diluted",
+      "threshold": "> $1.10"
+    }
+  ],
+  "lynch": {
+    "category": "Stalwart",
+    "why": "LSEG's annual revenue growth has stabilised at ~5\u20137% \u2014 consistent with a large, mature financial infrastructure company, not a fast grower. Founded in 1698, it operates irreplaceable exchange and clearing utilities. The business is well-known, predominantly subscription-based, and trades at a P/E of ~31x (trailing) with moderate forward growth expectations. This is not a cyclical: revenues are structurally recurring and largely non-correlated to market volumes (index licensing, data subscriptions, KYC tools dominate).",
+    "implication": "As a Stalwart, the primary driver of returns is valuation discipline \u2014 buy at a reasonable multiple, sell when it becomes extended. The current forward P/E of ~16x is below historical range (the stock traded at 25\u201329x forward in 2023\u20132024), suggesting the market has re-priced it down. The alpha case here is not growth acceleration but margin expansion + buyback compounding revaluing an underappreciated platform. The conviction ceiling for a Stalwart is limited \u2014 LSEG is unlikely to be a 3x stock; the realistic outcome is 10\u201315% annualised return with lower downside volatility than a Fast Grower.\n\n---"
+  }
+};
+
+// ─── CHART DEFAULTS ──────────────────────────────────────────────────────────
+const cd = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#8892a4', font: { size: 11 } } } },
+  scales: {
+    x: { ticks: { color: '#8892a4', font: { size: 11 } }, grid: { color: '#2e3348' } },
+    y: { ticks: { color: '#8892a4', font: { size: 11 } }, grid: { color: '#2e3348' } }
+  }
+};
+
+const annual   = [...REPORT_DATA.annual_rows].reverse();
+const quarters = [...REPORT_DATA.quarters].reverse();
+
+// Annual Revenue Bar
+new Chart(document.getElementById('annualRevenueChart'), {
+  type: 'bar',
+  data: {
+    labels: annual.map(a => a.label),
+    datasets: [{ label: 'Revenue ($B)', data: annual.map(a => a.revenue_b),
+      backgroundColor: '#3b82f6', borderRadius: 4 }]
+  },
+  options: { ...cd }
+});
+
+// Annual Margin Lines
+new Chart(document.getElementById('annualMarginChart'), {
+  type: 'line',
+  data: {
+    labels: annual.map(a => a.label),
+    datasets: [
+      { label: 'Gross', data: annual.map(a => a.gross_margin_pct), borderColor: '#22c55e', tension: 0.3, fill: false },
+      { label: 'Op.',   data: annual.map(a => a.op_margin_pct),    borderColor: '#3b82f6', tension: 0.3, fill: false },
+      { label: 'Net',   data: annual.map(a => a.net_margin_pct),   borderColor: '#a855f7', tension: 0.3, fill: false },
+    ]
+  },
+  options: { ...cd }
+});
+
+// Quarterly Revenue Bar
+new Chart(document.getElementById('quarterlyRevenueChart'), {
+  type: 'bar',
+  data: {
+    labels: quarters.map(q => q.label),
+    datasets: [{ label: 'Revenue ($B)', data: quarters.map(q => q.revenue_b),
+      backgroundColor: quarters.map((_, i, a) => i === a.length - 1 ? '#f59e0b' : '#3b82f6'),
+      borderRadius: 4 }]
+  },
+  options: { ...cd }
+});
+
+// Growth Chart (YoY + QoQ)
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: {
+    labels: quarters.map(q => q.label),
+    datasets: [
+      { label: 'YoY %', data: quarters.map(q => q.yoy_growth), borderColor: '#22c55e', tension: 0.3, fill: false },
+      { label: 'QoQ %', data: quarters.map(q => q.qoq_growth || 0), borderColor: '#f59e0b', tension: 0.3, fill: false, borderDash: [4,4] },
+    ]
+  },
+  options: { ...cd }
+});
+
+// ─── ANNUAL TABLE ────────────────────────────────────────────────────────────
+const atbody = document.getElementById('annualTable');
+REPORT_DATA.annual_rows.forEach(a => {
+  const yoy = a.yoy_growth > 0 ? `<span class="up">+${a.yoy_growth}%</span>` : a.yoy_growth < 0 ? `<span class="down">${a.yoy_growth}%</span>` : '—';
+  atbody.innerHTML += `<tr>
+    <td><b>${a.label}</b></td><td>$${a.revenue_b}B</td><td>${yoy}</td>
+    <td>${a.gross_margin_pct}%</td><td>${a.op_margin_pct}%</td>
+    <td>$${a.net_income_b}B</td><td>$${a.fcf_b}B</td><td>$${a.eps}</td>
+  </tr>`;
+});
+
+// ─── QUARTERLY TABLE ──────────────────────────────────────────────────────────
+const qtbody = document.getElementById('quarterlyTable');
+REPORT_DATA.quarters.forEach(q => {
+  const yoy = q.yoy_growth > 0 ? `<span class="up">+${q.yoy_growth}%</span>` : q.yoy_growth < 0 ? `<span class="down">${q.yoy_growth}%</span>` : '—';
+  const qoq = q.qoq_growth > 0 ? `<span class="up">+${q.qoq_growth}%</span>` : q.qoq_growth < 0 ? `<span class="down">${q.qoq_growth}%</span>` : '—';
+  qtbody.innerHTML += `<tr>
+    <td><b>${q.label}</b></td><td>$${q.revenue_b}B</td><td>${yoy}</td><td>${qoq}</td>
+    <td>${q.gross_margin_pct}%</td><td>${q.op_margin_pct}%</td>
+    <td>${q.net_income_b ? '$'+q.net_income_b+'B' : '—'}</td>
+    <td>${q.fcf_b ? '$'+q.fcf_b+'B' : '—'}</td><td>${q.eps}</td>
+  </tr>`;
+});
+
+// ─── GUIDANCE TABLE ───────────────────────────────────────────────────────────
+const gtbody = document.getElementById('guidanceTable');
+REPORT_DATA.guidance.forEach(g => {
+  const badge = g.result === 'Beat'
+    ? `<span class="beat">Beat</span>`
+    : g.result === 'Miss'
+    ? `<span class="miss">Miss</span>`
+    : `<span class="inline">In-line</span>`;
+  gtbody.innerHTML += `
+    <tr>
+      <td>${g.period}</td><td>${g.metric}</td>
+      <td>${g.guidance}</td><td>${g.actual}</td><td>${badge}</td>
+    </tr>`;
+});
+
+// ─── BULL / BEAR ──────────────────────────────────────────────────────────────
+const bullList = document.getElementById('bullList');
+REPORT_DATA.bull_case.forEach(b => { bullList.innerHTML += `<li>${b}</li>`; });
+
+const bearList = document.getElementById('bearList');
+REPORT_DATA.bear_case.forEach(b => { bearList.innerHTML += `<li>${b}</li>`; });
+
+// ─── KEY METRICS ──────────────────────────────────────────────────────────────
+const metricsWrap = document.getElementById('metricsWatch');
+REPORT_DATA.key_metrics.forEach(m => {
+  metricsWrap.innerHTML += `
+    <div class="metric-row">
+      <span class="metric-name">${m.name}</span>
+      <span class="metric-threshold">${m.threshold}</span>
+    </div>`;
+});
+</script>
+</body>
+</html>
