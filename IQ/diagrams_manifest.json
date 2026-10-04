@@ -1,6 +1,6 @@
 {
   "ticker": "IQ",
-  "built": "2026-10-03",
+  "built": "2026-10-04",
   "figures": [
     {
       "id": "revenue_mix",
@@ -15,6 +15,20 @@
       "title_th": "ห่วงโซ่อุปทาน",
       "caption_th": "ตำแหน่งของบริษัทระหว่างซัพพลายเออร์กับลูกค้า · เส้นประ = คอขวดและความเสี่ยงเชิงภูมิรัฐศาสตร์",
       "png": "diagrams/supply_chain.png"
+    },
+    {
+      "id": "margin_trend",
+      "after_heading": "income statement",
+      "title_th": "การเงิน · แนวโน้มอัตรากำไร 8 ไตรมาส",
+      "caption_th": "เส้น 3 เส้น = gross / operating / net margin รายไตรมาส — เห็น regime change และ shock จุดเดียว",
+      "png": "diagrams/margin_trend.png"
+    },
+    {
+      "id": "capital_returns",
+      "after_heading": "cash flow",
+      "title_th": "การเงิน · กระแสเงินสดและการคืนทุน",
+      "caption_th": "OCF / FCF / buyback ต่อปี + net cash ใต้แกน — เห็น capital efficiency และการคืนทุน",
+      "png": "diagrams/capital_returns.png"
     },
     {
       "id": "eps_scenario",
