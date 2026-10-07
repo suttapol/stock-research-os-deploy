@@ -10,6 +10,13 @@
       "png": "diagrams/revenue_mix.png"
     },
     {
+      "id": "supply_chain",
+      "after_heading": "supply chain",
+      "title_th": "ห่วงโซ่อุปทาน",
+      "caption_th": "ตำแหน่งของบริษัทระหว่างซัพพลายเออร์กับลูกค้า · เส้นประ = คอขวดและความเสี่ยงเชิงภูมิรัฐศาสตร์",
+      "png": "diagrams/supply_chain.png"
+    },
+    {
       "id": "margin_trend",
       "after_heading": "income statement",
       "title_th": "การเงิน · แนวโน้มอัตรากำไร 8 ไตรมาส",
